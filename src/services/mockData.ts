@@ -1,4 +1,73 @@
-import { Student, Company, Job, Certificate, PlacementStats, DepartmentStats, SkillDemand, MonthlyPlacement, Application, CompanyStats } from '@/types';
+import { Student, Company, Job, Certificate, PlacementStats, DepartmentStats, SkillDemand, MonthlyPlacement, Application, CompanyStats, BlockchainTransaction } from '@/types';
+
+// Mock Blockchain Transactions
+export const mockTransactions: BlockchainTransaction[] = [
+  {
+    hash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+    type: 'issue',
+    status: 'confirmed',
+    blockNumber: 18234567,
+    timestamp: '2024-01-15T10:30:00Z',
+    gasUsed: 21000,
+    certificateId: 'cert1',
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+    to: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
+  },
+  {
+    hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    type: 'issue',
+    status: 'confirmed',
+    blockNumber: 18456789,
+    timestamp: '2024-01-20T14:45:00Z',
+    gasUsed: 23500,
+    certificateId: 'cert2',
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+    to: '0x9cA1f109551bD432803012645Ac136ddd64DBA73',
+  },
+  {
+    hash: '0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba',
+    type: 'issue',
+    status: 'confirmed',
+    blockNumber: 18567890,
+    timestamp: '2024-02-05T09:15:00Z',
+    gasUsed: 22800,
+    certificateId: 'cert3',
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+    to: '0xAcB1f109551bD432803012645Ac136ddd64DBA74',
+  },
+  {
+    hash: '0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+    type: 'verify',
+    status: 'confirmed',
+    blockNumber: 18678901,
+    timestamp: '2024-02-10T16:20:00Z',
+    gasUsed: 15200,
+    certificateId: 'cert1',
+    from: '0x3dB1f109551bD432803012645Ac136ddd64DBA75',
+    to: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+  },
+  {
+    hash: '0x5555555555555555555555555555555555555555555555555555555555555555',
+    type: 'verify',
+    status: 'pending',
+    blockNumber: 18789012,
+    timestamp: '2024-02-15T11:00:00Z',
+    gasUsed: 14800,
+    certificateId: 'cert2',
+    from: '0x4eC1f109551bD432803012645Ac136ddd64DBA76',
+    to: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+  },
+  {
+    hash: '0x6666666666666666666666666666666666666666666666666666666666666666',
+    type: 'issue',
+    status: 'failed',
+    blockNumber: 18890123,
+    timestamp: '2024-02-18T08:30:00Z',
+    gasUsed: 21000,
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+    to: '0x5fD1f109551bD432803012645Ac136ddd64DBA77',
+  },
+];
 
 // Mock Students
 export const mockStudents: Student[] = [
