@@ -1,29 +1,32 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, AppRole } from '@/contexts/AuthContext';
 
 interface GoogleAuthButtonProps {
-  onSuccess: () => void;
+  role: AppRole;
   isLoading?: boolean;
   className?: string;
 }
 
-const GoogleAuthButton = ({ onSuccess, isLoading: externalLoading, className }: GoogleAuthButtonProps) => {
+const GoogleAuthButton = ({ role, isLoading: externalLoading, className }: GoogleAuthButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { signInWithGoogle } = useAuth();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     
-    // Simulate Google OAuth flow
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const { error } = await signInWithGoogle(role);
     
-    toast({
-      title: "Google Sign In",
-      description: "Successfully authenticated with Google",
-    });
+    if (error) {
+      toast({
+        title: "Google Sign In Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
     
-    onSuccess();
     setIsLoading(false);
   };
 

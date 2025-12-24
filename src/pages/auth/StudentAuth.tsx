@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,16 +13,23 @@ import { Separator } from '@/components/ui/separator';
 
 const StudentAuth = () => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('student@college.edu');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
+  const [department, setDepartment] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated && role === 'student') {
+      navigate('/student');
+    }
+  }, [isAuthenticated, role, navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,14 +59,22 @@ const StudentAuth = () => {
 
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signIn(email, password);
     
-    login('student');
+    if (error) {
+      toast({
+        title: "Sign In Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Welcome back!",
-      description: "You've successfully signed in as Student",
+      description: "You've successfully signed in",
     });
-    navigate('/student');
     setIsLoading(false);
   };
 
@@ -69,7 +84,7 @@ const StudentAuth = () => {
     if (!name || !email || !password || !confirmPassword || !rollNumber) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -104,14 +119,27 @@ const StudentAuth = () => {
 
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signUp(email, password, {
+      name,
+      role: 'student',
+      roll_number: rollNumber,
+      department,
+    });
     
-    login('student');
+    if (error) {
+      toast({
+        title: "Sign Up Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Account Created!",
       description: "Your Student account has been created successfully",
     });
-    navigate('/student');
     setIsLoading(false);
   };
 
@@ -147,14 +175,7 @@ const StudentAuth = () => {
               <TabsContent value="signin">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('student');
-                      toast({
-                        title: "Welcome back!",
-                        description: "You've successfully signed in with Google",
-                      });
-                      navigate('/student');
-                    }}
+                    role="student"
                     isLoading={isLoading}
                   />
                   
@@ -211,14 +232,7 @@ const StudentAuth = () => {
               <TabsContent value="signup">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('student');
-                      toast({
-                        title: "Account Created!",
-                        description: "Your account has been created with Google",
-                      });
-                      navigate('/student');
-                    }}
+                    role="student"
                     isLoading={isLoading}
                   />
                   
@@ -251,6 +265,16 @@ const StudentAuth = () => {
                         value={rollNumber}
                         onChange={(e) => setRollNumber(e.target.value)}
                         placeholder="2024CSE001"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-department">Department (Optional)</Label>
+                      <Input
+                        id="signup-department"
+                        type="text"
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        placeholder="Computer Science"
                       />
                     </div>
                     <div className="space-y-2">
@@ -304,12 +328,6 @@ const StudentAuth = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground">
-                🔐 Demo Mode - Use pre-filled credentials or any values
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
