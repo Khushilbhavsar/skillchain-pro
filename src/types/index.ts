@@ -1,6 +1,19 @@
 // User & Auth Types
 export type UserRole = 'tpo' | 'student' | 'company';
 
+// Blockchain Transaction
+export interface BlockchainTransaction {
+  hash: string;
+  type: 'issue' | 'verify' | 'revoke';
+  status: 'confirmed' | 'pending' | 'failed';
+  blockNumber: number;
+  timestamp: string;
+  gasUsed: number;
+  certificateId?: string;
+  from: string;
+  to: string;
+}
+
 export interface User {
   id: string;
   email: string;
