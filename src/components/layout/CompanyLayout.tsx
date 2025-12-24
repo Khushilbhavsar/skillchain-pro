@@ -34,6 +34,8 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 const menuItems = [
   { title: 'Dashboard', url: '/company', icon: LayoutDashboard },
@@ -137,6 +139,8 @@ export function CompanyLayout() {
             <SidebarTrigger />
             <div className="flex-1" />
             <span className="text-sm text-muted-foreground">Placement Season 2024-25</span>
+            <NotificationCenter />
+            <ThemeToggle />
           </header>
           <div className="flex-1 p-6 overflow-auto">
             <Outlet />
