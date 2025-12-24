@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,21 @@ import { Separator } from '@/components/ui/separator';
 
 const AdminAuth = () => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('tpo@college.edu');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated && role === 'tpo') {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, role, navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,15 +57,22 @@ const AdminAuth = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signIn(email, password);
     
-    login('tpo');
+    if (error) {
+      toast({
+        title: "Sign In Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Welcome back!",
-      description: "You've successfully signed in as Admin/TPO",
+      description: "You've successfully signed in",
     });
-    navigate('/admin');
     setIsLoading(false);
   };
 
@@ -104,22 +117,31 @@ const AdminAuth = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signUp(email, password, {
+      name,
+      role: 'tpo',
+    });
     
-    login('tpo');
+    if (error) {
+      toast({
+        title: "Sign Up Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Account Created!",
       description: "Your Admin/TPO account has been created successfully",
     });
-    navigate('/admin');
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Back Link */}
         <Link 
           to="/" 
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -149,14 +171,7 @@ const AdminAuth = () => {
               <TabsContent value="signin">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('tpo');
-                      toast({
-                        title: "Welcome back!",
-                        description: "You've successfully signed in with Google",
-                      });
-                      navigate('/admin');
-                    }}
+                    role="tpo"
                     isLoading={isLoading}
                   />
                   
@@ -213,14 +228,7 @@ const AdminAuth = () => {
               <TabsContent value="signup">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('tpo');
-                      toast({
-                        title: "Account Created!",
-                        description: "Your account has been created with Google",
-                      });
-                      navigate('/admin');
-                    }}
+                    role="tpo"
                     isLoading={isLoading}
                   />
                   
@@ -296,12 +304,6 @@ const AdminAuth = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground">
-                🔐 Demo Mode - Use pre-filled credentials or any values
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>

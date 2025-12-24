@@ -21,7 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -51,11 +50,11 @@ const menuItems = [
 ];
 
 export function StudentLayout() {
-  const { user, logout, switchRole } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
@@ -109,28 +108,17 @@ export function StudentLayout() {
                 <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-2 px-3 text-sidebar-foreground hover:bg-sidebar-accent">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
-                      {user?.name?.charAt(0) || 'S'}
+                      {profile?.name?.charAt(0) || 'S'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium truncate">{user?.name}</p>
-                    <p className="text-xs text-sidebar-foreground/60 capitalize">{user?.role}</p>
+                    <p className="text-sm font-medium truncate">{profile?.name || 'Student'}</p>
+                    <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'student'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Switch Role (Dev Mode)</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { switchRole('tpo'); navigate('/admin'); }}>
-                  TPO Admin
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { switchRole('student'); navigate('/student'); }}>
-                  Student
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => switchRole('company')}>
-                  Company
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="w-4 h-4 mr-2" />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,16 +13,22 @@ import { Separator } from '@/components/ui/separator';
 
 const CompanyAuth = () => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('hr@techcorp.com');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated && role === 'company') {
+      navigate('/company');
+    }
+  }, [isAuthenticated, role, navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,14 +58,22 @@ const CompanyAuth = () => {
 
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signIn(email, password);
     
-    login('company');
+    if (error) {
+      toast({
+        title: "Sign In Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Welcome back!",
-      description: "You've successfully signed in as Company",
+      description: "You've successfully signed in",
     });
-    navigate('/company');
     setIsLoading(false);
   };
 
@@ -104,14 +118,26 @@ const CompanyAuth = () => {
 
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signUp(email, password, {
+      name: contactPerson,
+      role: 'company',
+      company_name: companyName,
+    });
     
-    login('company');
+    if (error) {
+      toast({
+        title: "Sign Up Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     toast({
       title: "Account Created!",
       description: "Your Company account has been created successfully",
     });
-    navigate('/company');
     setIsLoading(false);
   };
 
@@ -147,14 +173,7 @@ const CompanyAuth = () => {
               <TabsContent value="signin">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('company');
-                      toast({
-                        title: "Welcome back!",
-                        description: "You've successfully signed in with Google",
-                      });
-                      navigate('/company');
-                    }}
+                    role="company"
                     isLoading={isLoading}
                   />
                   
@@ -211,14 +230,7 @@ const CompanyAuth = () => {
               <TabsContent value="signup">
                 <div className="space-y-4">
                   <GoogleAuthButton
-                    onSuccess={() => {
-                      login('company');
-                      toast({
-                        title: "Account Created!",
-                        description: "Your account has been created with Google",
-                      });
-                      navigate('/company');
-                    }}
+                    role="company"
                     isLoading={isLoading}
                   />
                   
@@ -304,12 +316,6 @@ const CompanyAuth = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground">
-                🔐 Demo Mode - Use pre-filled credentials or any values
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
