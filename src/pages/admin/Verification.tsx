@@ -3,10 +3,11 @@ import { VerificationForm } from '@/components/admin/VerificationForm';
 import { TransactionHistory } from '@/components/admin/TransactionHistory';
 import { CertificateStatusGrid } from '@/components/admin/CertificateStatusGrid';
 import { BlockchainStats } from '@/components/admin/BlockchainStats';
+import { CertificateIssueForm } from '@/components/admin/CertificateIssueForm';
 import { mockCertificates, mockTransactions } from '@/services/mockData';
 import { Certificate } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, History, Grid3X3, Activity } from 'lucide-react';
+import { Shield, History, Grid3X3, Activity, FilePlus } from 'lucide-react';
 
 export default function VerificationPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
@@ -37,8 +38,12 @@ export default function VerificationPage() {
       <BlockchainStats stats={blockchainStats} />
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="verify" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid mb-6">
+      <Tabs defaultValue="issue" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid mb-6">
+          <TabsTrigger value="issue" className="gap-2">
+            <FilePlus className="w-4 h-4" />
+            <span className="hidden sm:inline">Issue</span>
+          </TabsTrigger>
           <TabsTrigger value="verify" className="gap-2">
             <Shield className="w-4 h-4" />
             <span className="hidden sm:inline">Verify</span>
@@ -56,6 +61,10 @@ export default function VerificationPage() {
             <span className="hidden sm:inline">Network</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="issue">
+          <CertificateIssueForm />
+        </TabsContent>
 
         <TabsContent value="verify">
           <VerificationForm />
