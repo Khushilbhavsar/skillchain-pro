@@ -157,8 +157,24 @@ export function sortItems<T>(
   });
 }
 
+// Specific search functions for different entity types
+export function searchStudents<T extends Record<string, any>>(items: T[], filters: SearchFilters): T[] {
+  return searchItems(items, filters, ['name', 'email', 'rollNumber', 'department', 'skills']);
+}
+
+export function searchJobs<T extends Record<string, any>>(items: T[], filters: SearchFilters): T[] {
+  return searchItems(items, filters, ['title', 'companyName', 'description', 'locations', 'skills']);
+}
+
+export function searchCompanies<T extends Record<string, any>>(items: T[], filters: SearchFilters): T[] {
+  return searchItems(items, filters, ['name', 'industry', 'description']);
+}
+
 export const searchService = {
   searchItems,
   paginateItems,
   sortItems,
+  searchStudents,
+  searchJobs,
+  searchCompanies,
 };

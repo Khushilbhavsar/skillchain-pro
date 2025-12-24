@@ -40,13 +40,15 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { OnboardingTooltip } from '@/components/onboarding/OnboardingTooltip';
+import { adminOnboardingSteps } from '@/config/onboardingSteps';
 
 const menuItems = [
-  { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
-  { title: 'Students', url: '/admin/students', icon: Users },
-  { title: 'Companies', url: '/admin/companies', icon: Building2 },
-  { title: 'Jobs', url: '/admin/jobs', icon: Briefcase },
-  { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
+  { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, onboardingId: 'dashboard' },
+  { title: 'Students', url: '/admin/students', icon: Users, onboardingId: 'students' },
+  { title: 'Companies', url: '/admin/companies', icon: Building2, onboardingId: 'companies' },
+  { title: 'Jobs', url: '/admin/jobs', icon: Briefcase, onboardingId: 'jobs' },
+  { title: 'Analytics', url: '/admin/analytics', icon: BarChart3, onboardingId: 'analytics' },
   { title: 'Advanced Analytics', url: '/admin/advanced-analytics', icon: LineChart },
   { title: 'Interview Schedule', url: '/admin/interviews', icon: Calendar },
   { title: 'Verification', url: '/admin/verification', icon: Shield },
@@ -64,7 +66,7 @@ export function DashboardLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="border-r border-sidebar-border">
+        <Sidebar className="border-r border-sidebar-border" data-onboarding="sidebar">
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
@@ -92,6 +94,7 @@ export function DashboardLayout() {
                           end={item.url === '/admin'}
                           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          data-onboarding={item.onboardingId}
                         >
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
@@ -150,12 +153,14 @@ export function DashboardLayout() {
               Academic Year 2024-25
             </div>
             <NotificationCenter />
-            <ThemeToggle />
+            <ThemeToggle data-onboarding="theme" />
           </header>
           <div className="flex-1 p-6 overflow-auto">
             <Outlet />
           </div>
         </main>
+
+        <OnboardingTooltip steps={adminOnboardingSteps} />
       </div>
     </SidebarProvider>
   );

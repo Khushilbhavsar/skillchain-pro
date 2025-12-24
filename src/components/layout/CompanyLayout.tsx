@@ -36,12 +36,14 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { OnboardingTooltip } from '@/components/onboarding/OnboardingTooltip';
+import { companyOnboardingSteps } from '@/config/onboardingSteps';
 
 const menuItems = [
-  { title: 'Dashboard', url: '/company', icon: LayoutDashboard },
-  { title: 'My Jobs', url: '/company/jobs', icon: Briefcase },
-  { title: 'Post Job', url: '/company/post-job', icon: PlusCircle },
-  { title: 'Applicants', url: '/company/applicants', icon: Users },
+  { title: 'Dashboard', url: '/company', icon: LayoutDashboard, onboardingId: 'dashboard' },
+  { title: 'My Jobs', url: '/company/jobs', icon: Briefcase, onboardingId: 'jobs' },
+  { title: 'Post Job', url: '/company/post-job', icon: PlusCircle, onboardingId: 'post-job' },
+  { title: 'Applicants', url: '/company/applicants', icon: Users, onboardingId: 'applicants' },
 ];
 
 export function CompanyLayout() {
@@ -56,7 +58,7 @@ export function CompanyLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="border-r border-sidebar-border">
+        <Sidebar className="border-r border-sidebar-border" data-onboarding="sidebar">
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
@@ -84,6 +86,7 @@ export function CompanyLayout() {
                           end={item.url === '/company'}
                           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          data-onboarding={item.onboardingId}
                         >
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
@@ -146,6 +149,8 @@ export function CompanyLayout() {
             <Outlet />
           </div>
         </main>
+
+        <OnboardingTooltip steps={companyOnboardingSteps} />
       </div>
     </SidebarProvider>
   );
