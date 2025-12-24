@@ -9,6 +9,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
 import { CompanyLayout } from "@/components/layout/CompanyLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -50,6 +51,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <SpeedInsights />
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
