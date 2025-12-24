@@ -34,8 +34,10 @@ import {
   LogOut,
   ChevronDown,
   GraduationCap,
-  Settings,
+  FileEdit,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 const menuItems = [
   { title: 'Dashboard', url: '/student', icon: LayoutDashboard },
@@ -43,6 +45,7 @@ const menuItems = [
   { title: 'Certificates', url: '/student/certificates', icon: Award },
   { title: 'Applications', url: '/student/applications', icon: FileText },
   { title: 'Job Openings', url: '/student/jobs', icon: Briefcase },
+  { title: 'Resume Builder', url: '/student/resume', icon: FileEdit },
 ];
 
 export function StudentLayout() {
@@ -142,6 +145,8 @@ export function StudentLayout() {
             <div className="text-sm text-muted-foreground">
               Academic Year 2024-25
             </div>
+            <NotificationCenter />
+            <ThemeToggle />
           </header>
           <div className="flex-1 p-6 overflow-auto">
             <Outlet />

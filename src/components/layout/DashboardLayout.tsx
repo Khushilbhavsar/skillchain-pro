@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -36,7 +35,11 @@ import {
   LogOut,
   ChevronDown,
   GraduationCap,
+  LineChart,
+  Calendar,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
@@ -44,6 +47,8 @@ const menuItems = [
   { title: 'Companies', url: '/admin/companies', icon: Building2 },
   { title: 'Jobs', url: '/admin/jobs', icon: Briefcase },
   { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
+  { title: 'Advanced Analytics', url: '/admin/advanced-analytics', icon: LineChart },
+  { title: 'Interview Schedule', url: '/admin/interviews', icon: Calendar },
   { title: 'Verification', url: '/admin/verification', icon: Shield },
 ];
 
@@ -144,6 +149,8 @@ export function DashboardLayout() {
             <div className="text-sm text-muted-foreground">
               Academic Year 2024-25
             </div>
+            <NotificationCenter />
+            <ThemeToggle />
           </header>
           <div className="flex-1 p-6 overflow-auto">
             <Outlet />
