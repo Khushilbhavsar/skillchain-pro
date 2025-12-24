@@ -1,0 +1,209 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Briefcase, Users, CheckCircle, TrendingUp, Plus, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { companyService } from '@/services/companyService';
+import { jobService } from '@/services/jobService';
+import { Job, Company } from '@/types';
+
+export default function CompanyDashboard() {
+  const navigate = useNavigate();
+  const [company, setCompany] = useState<Company | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    activeJobs: 0,
+    totalApplicants: 0,
+    totalHires: 0,
+  });
+  const [appStats, setAppStats] = useState({
+    total: 0,
+    applied: 0,
+    shortlisted: 0,
+    interviewed: 0,
+    selected: 0,
+    rejected: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const currentCompany = await companyService.getCurrentCompany();
+        setCompany(currentCompany);
+
+        const [companyJobs, companyStats, applicationStats] = await Promise.all([
+          jobService.getJobsByCompany(currentCompany.id),
+          companyService.getCompanyStats(currentCompany.id),
+          jobService.getApplicationStats(currentCompany.id),
+        ]);
+
+        setJobs(companyJobs);
+        setStats(companyStats);
+        setAppStats(applicationStats);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const formatPackage = (amount: number) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    }
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Welcome, {company?.name}</h1>
+          <p className="text-muted-foreground">Manage your job postings and applicants</p>
+        </div>
+        <Button onClick={() => navigate('/company/post-job')}>
+          <Plus className="w-4 h-4 mr-2" />
+          Post New Job
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
+            <Briefcase className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalJobs}</div>
+            <p className="text-xs text-muted-foreground">{stats.activeJobs} active</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Applicants</CardTitle>
+            <Users className="h-4 w-4 text-secondary-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{appStats.total}</div>
+            <p className="text-xs text-muted-foreground">{appStats.shortlisted} shortlisted</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Selected</CardTitle>
+            <CheckCircle className="h-4 w-4 text-accent-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{appStats.selected}</div>
+            <p className="text-xs text-muted-foreground">Candidates selected</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-muted to-muted/50 border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Hires</CardTitle>
+            <TrendingUp className="h-4 w-4 text-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalHires}</div>
+            <p className="text-xs text-muted-foreground">All time</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Application Pipeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Application Pipeline</CardTitle>
+          <CardDescription>Current status of all applications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-5 gap-4">
+            {[
+              { label: 'Applied', count: appStats.applied, color: 'bg-blue-500' },
+              { label: 'Shortlisted', count: appStats.shortlisted, color: 'bg-yellow-500' },
+              { label: 'Interviewed', count: appStats.interviewed, color: 'bg-purple-500' },
+              { label: 'Selected', count: appStats.selected, color: 'bg-green-500' },
+              { label: 'Rejected', count: appStats.rejected, color: 'bg-red-500' },
+            ].map((stage, index) => (
+              <div key={stage.label} className="text-center">
+                <div className={`${stage.color} h-2 rounded-full mb-2`} />
+                <p className="text-2xl font-bold">{stage.count}</p>
+                <p className="text-xs text-muted-foreground">{stage.label}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Jobs */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Recent Job Postings</CardTitle>
+            <CardDescription>Your latest job listings</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/company/jobs')}>
+            View All
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {jobs.slice(0, 3).map((job) => (
+              <div
+                key={job.id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">{job.title}</h4>
+                    <Badge
+                      variant={job.status === 'open' ? 'default' : 'secondary'}
+                      className="capitalize"
+                    >
+                      {job.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {formatPackage(job.packageMin)} - {formatPackage(job.packageMax)} • {job.locations.join(', ')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">{job.applicantsCount}</p>
+                  <p className="text-xs text-muted-foreground">Applicants</p>
+                </div>
+              </div>
+            ))}
+            {jobs.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No jobs posted yet</p>
+                <Button variant="link" onClick={() => navigate('/company/post-job')}>
+                  Post your first job
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

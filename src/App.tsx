@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
+import { CompanyLayout } from "@/components/layout/CompanyLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -19,6 +20,10 @@ import StudentProfile from "./pages/student/Profile";
 import StudentCertificates from "./pages/student/Certificates";
 import StudentApplications from "./pages/student/Applications";
 import StudentJobs from "./pages/student/Jobs";
+import CompanyDashboard from "./pages/company/Dashboard";
+import CompanyJobs from "./pages/company/Jobs";
+import PostJob from "./pages/company/PostJob";
+import Applicants from "./pages/company/Applicants";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +50,12 @@ const App = () => (
               <Route path="certificates" element={<StudentCertificates />} />
               <Route path="applications" element={<StudentApplications />} />
               <Route path="jobs" element={<StudentJobs />} />
+            </Route>
+            <Route path="/company" element={<CompanyLayout />}>
+              <Route index element={<CompanyDashboard />} />
+              <Route path="jobs" element={<CompanyJobs />} />
+              <Route path="post-job" element={<PostJob />} />
+              <Route path="applicants" element={<Applicants />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
