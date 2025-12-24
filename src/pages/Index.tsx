@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Building2, Users, Shield, ArrowRight } from 'lucide-react';
+import { GraduationCap, Building2, Shield, ArrowRight } from 'lucide-react';
 import { UserRole } from '@/types';
+import Logo from '@/components/Logo';
 
 const roleConfig: Record<UserRole, { icon: React.ComponentType<any>; title: string; description: string; color: string; path: string }> = {
   tpo: {
@@ -33,8 +34,8 @@ const Index = () => {
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Users className="w-8 h-8 text-primary" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <Logo size={80} />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Placement Management System
