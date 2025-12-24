@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Building2,
   LayoutDashboard,
   Briefcase,
   Users,
@@ -37,6 +36,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { OnboardingTooltip } from '@/components/onboarding/OnboardingTooltip';
 import { companyOnboardingSteps } from '@/config/onboardingSteps';
+import Logo from '@/components/Logo';
 
 const menuItems = [
   { title: 'Dashboard', url: '/company', icon: LayoutDashboard, onboardingId: 'dashboard' },
@@ -60,9 +60,7 @@ export function CompanyLayout() {
         <Sidebar className="border-r border-sidebar-border" data-onboarding="sidebar">
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
-              </div>
+              <Logo size={40} />
               <div className="flex flex-col">
                 <span className="font-display font-semibold text-sidebar-foreground">PlaceChain</span>
                 <span className="text-xs text-sidebar-foreground/60">Company Portal</span>
