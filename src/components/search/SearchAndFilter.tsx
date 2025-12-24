@@ -22,20 +22,25 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import type { SearchFilters } from '@/services/searchService';
 
+// Re-export for convenience
+export type FilterState = SearchFilters;
+
 interface FilterOption {
   value: string;
   label: string;
 }
 
-interface SearchAndFilterProps {
+export interface SearchAndFilterProps {
   placeholder?: string;
   filters: SearchFilters;
   onFiltersChange: (filters: SearchFilters) => void;
-  departments?: FilterOption[];
-  years?: FilterOption[];
-  statuses?: FilterOption[];
-  jobTypes?: FilterOption[];
-  locations?: FilterOption[];
+  departmentOptions?: FilterOption[];
+  statusOptions?: FilterOption[];
+  jobTypeOptions?: FilterOption[];
+  locationOptions?: FilterOption[];
+  yearOptions?: FilterOption[];
+  showDepartmentFilter?: boolean;
+  showJobTypeFilter?: boolean;
   showCgpaFilter?: boolean;
 }
 
@@ -43,11 +48,13 @@ export function SearchAndFilter({
   placeholder = 'Search...',
   filters,
   onFiltersChange,
-  departments = [],
-  years = [],
-  statuses = [],
-  jobTypes = [],
-  locations = [],
+  departmentOptions = [],
+  statusOptions = [],
+  jobTypeOptions = [],
+  locationOptions = [],
+  yearOptions = [],
+  showDepartmentFilter = true,
+  showJobTypeFilter = false,
   showCgpaFilter = false,
 }: SearchAndFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -95,7 +102,7 @@ export function SearchAndFilter({
 
       {/* Quick Filters */}
       <div className="flex gap-2 flex-wrap">
-        {departments.length > 0 && (
+        {showDepartmentFilter && departmentOptions.length > 0 && (
           <Select
             value={filters.department || 'all'}
             onValueChange={(v) => updateFilter('department', v)}
@@ -105,7 +112,7 @@ export function SearchAndFilter({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((dept) => (
+              {departmentOptions.map((dept) => (
                 <SelectItem key={dept.value} value={dept.value}>
                   {dept.label}
                 </SelectItem>
@@ -114,7 +121,7 @@ export function SearchAndFilter({
           </Select>
         )}
 
-        {statuses.length > 0 && (
+        {statusOptions.length > 0 && (
           <Select
             value={filters.status || 'all'}
             onValueChange={(v) => updateFilter('status', v)}
@@ -124,7 +131,7 @@ export function SearchAndFilter({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              {statuses.map((status) => (
+              {statusOptions.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
                 </SelectItem>
@@ -154,7 +161,7 @@ export function SearchAndFilter({
               </SheetDescription>
             </SheetHeader>
             <div className="mt-6 space-y-6">
-              {years.length > 0 && (
+              {yearOptions.length > 0 && (
                 <div className="space-y-2">
                   <Label>Academic Year</Label>
                   <Select
@@ -166,7 +173,7 @@ export function SearchAndFilter({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Years</SelectItem>
-                      {years.map((year) => (
+                      {yearOptions.map((year) => (
                         <SelectItem key={year.value} value={year.value}>
                           {year.label}
                         </SelectItem>
@@ -176,7 +183,7 @@ export function SearchAndFilter({
                 </div>
               )}
 
-              {jobTypes.length > 0 && (
+              {showJobTypeFilter && jobTypeOptions.length > 0 && (
                 <div className="space-y-2">
                   <Label>Job Type</Label>
                   <Select
@@ -188,7 +195,7 @@ export function SearchAndFilter({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      {jobTypes.map((type) => (
+                      {jobTypeOptions.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -198,7 +205,7 @@ export function SearchAndFilter({
                 </div>
               )}
 
-              {locations.length > 0 && (
+              {locationOptions.length > 0 && (
                 <div className="space-y-2">
                   <Label>Location</Label>
                   <Select
@@ -210,7 +217,7 @@ export function SearchAndFilter({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Locations</SelectItem>
-                      {locations.map((loc) => (
+                      {locationOptions.map((loc) => (
                         <SelectItem key={loc.value} value={loc.value}>
                           {loc.label}
                         </SelectItem>
