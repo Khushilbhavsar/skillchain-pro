@@ -33,7 +33,6 @@ import {
   Shield,
   LogOut,
   ChevronDown,
-  GraduationCap,
   LineChart,
   Calendar,
 } from 'lucide-react';
@@ -41,6 +40,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { OnboardingTooltip } from '@/components/onboarding/OnboardingTooltip';
 import { adminOnboardingSteps } from '@/config/onboardingSteps';
+import Logo from '@/components/Logo';
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, onboardingId: 'dashboard' },
@@ -68,9 +68,7 @@ export function DashboardLayout() {
         <Sidebar className="border-r border-sidebar-border" data-onboarding="sidebar">
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-sidebar-primary-foreground" />
-              </div>
+              <Logo size={40} />
               <div className="flex flex-col">
                 <span className="font-display font-semibold text-sidebar-foreground">PlaceChain</span>
                 <span className="text-xs text-sidebar-foreground/60">Admin Portal</span>
