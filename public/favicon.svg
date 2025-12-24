@@ -1,0 +1,53 @@
+<svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+    <linearGradient id="innerGradient" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer hexagon ring -->
+  <path
+    d="M50 5 L87 27.5 L87 72.5 L50 95 L13 72.5 L13 27.5 Z"
+    stroke="url(#logoGradient)"
+    stroke-width="4"
+    fill="none"
+  />
+  
+  <!-- Inner hexagon filled -->
+  <path
+    d="M50 15 L78 32.5 L78 67.5 L50 85 L22 67.5 L22 32.5 Z"
+    fill="url(#innerGradient)"
+  />
+  
+  <!-- Central P letter stylized -->
+  <g>
+    <!-- P stem -->
+    <rect
+      x="38"
+      y="32"
+      width="6"
+      height="36"
+      rx="2"
+      fill="white"
+    />
+    <!-- P bowl -->
+    <path
+      d="M44 32 L56 32 C66 32 66 50 56 50 L44 50"
+      stroke="white"
+      stroke-width="6"
+      stroke-linecap="round"
+      fill="none"
+    />
+  </g>
+  
+  <!-- Decorative dots -->
+  <circle cx="50" cy="10" r="3" fill="#8B5CF6" />
+  <circle cx="85" cy="30" r="2.5" fill="#06B6D4" />
+  <circle cx="85" cy="70" r="2.5" fill="#10B981" />
+</svg>
