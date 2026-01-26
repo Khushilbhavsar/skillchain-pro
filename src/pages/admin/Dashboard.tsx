@@ -3,15 +3,17 @@ import { mockPlacementStats, mockMonthlyPlacements, mockSkillDemand } from '@/se
 import { Users, UserCheck, Clock, TrendingUp, IndianRupee, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminDashboard() {
+  const { profile } = useAuth();
   const formatPackage = (pkg: number) => `₹${(pkg / 100000).toFixed(1)}L`;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's an overview of placement activities.</p>
+        <p className="text-muted-foreground">Welcome back, {profile?.name || 'Admin'}! Here's an overview of placement activities.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -7,9 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { companyService } from '@/services/companyService';
 import { jobService } from '@/services/jobService';
 import { Job, Company } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [stats, setStats] = useState({
@@ -72,7 +74,7 @@ export default function CompanyDashboard() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold">Welcome, {company?.name}</h1>
+          <h1 className="text-3xl font-display font-bold">Welcome, {profile?.company_name || profile?.name || 'Company'}</h1>
           <p className="text-muted-foreground">Manage your job postings and applicants</p>
         </div>
         <Button onClick={() => navigate('/company/post-job')}>

@@ -16,17 +16,19 @@ import {
   Star
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Using first student as the logged-in user
-const currentStudent = mockStudents[0];
-const studentApplications = mockApplications.filter(a => a.studentId === currentStudent.id);
-const studentCertificates = mockCertificates.filter(c => c.studentId === currentStudent.id);
-const eligibleJobs = mockJobs.filter(j => 
-  j.status === 'open' && 
-  currentStudent.cgpa >= j.eligibilityCriteria.minCgpa
-);
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentDashboard() {
+  const { profile } = useAuth();
+  
+  // Using first student as fallback for demo data
+  const currentStudent = mockStudents[0];
+  const studentApplications = mockApplications.filter(a => a.studentId === currentStudent.id);
+  const studentCertificates = mockCertificates.filter(c => c.studentId === currentStudent.id);
+  const eligibleJobs = mockJobs.filter(j => 
+    j.status === 'open' && 
+    currentStudent.cgpa >= j.eligibilityCriteria.minCgpa
+  );
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'selected': return <CheckCircle2 className="w-4 h-4 text-success" />;
@@ -59,7 +61,7 @@ export default function StudentDashboard() {
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold">Welcome back, {currentStudent.name.split(' ')[0]}!</h1>
+          <h1 className="text-3xl font-display font-bold">Welcome back, {profile?.name?.split(' ')[0] || 'Student'}!</h1>
           <p className="text-muted-foreground">Here's your placement journey overview</p>
         </div>
         <Badge className={`${statusConfig.color} px-4 py-2 text-sm`}>
@@ -77,7 +79,7 @@ export default function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{currentStudent.cgpa.toFixed(1)}</div>
-            <p className="text-xs text-muted-foreground">{currentStudent.department}</p>
+            <p className="text-xs text-muted-foreground">{profile?.department || currentStudent.department}</p>
           </CardContent>
         </Card>
 
