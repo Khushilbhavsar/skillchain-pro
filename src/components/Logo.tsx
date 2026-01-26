@@ -1,21 +1,18 @@
 import { motion } from 'framer-motion';
-import React from 'react';
 
 interface LogoProps {
   size?: number;
   className?: string;
 }
 
-const Logo = React.forwardRef<HTMLDivElement, LogoProps>(
-  ({ size = 64, className = '' }, ref) => {
-    return (
-      <motion.div
-        ref={ref}
-        className={`relative ${className}`}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      >
+const Logo = ({ size = 64, className = '' }: LogoProps) => {
+  return (
+    <motion.div
+      className={`relative ${className}`}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
       <svg
         width={size}
         height={size}
@@ -119,9 +116,6 @@ const Logo = React.forwardRef<HTMLDivElement, LogoProps>(
       </svg>
     </motion.div>
   );
-  }
-);
-
-Logo.displayName = 'Logo';
+};
 
 export default Logo;
