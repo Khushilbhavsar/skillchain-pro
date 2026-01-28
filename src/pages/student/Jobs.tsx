@@ -70,12 +70,12 @@ export default function StudentJobs() {
   const handleApply = async (jobId: string) => {
     setApplying(jobId);
     try {
-      const result = await applicationService.applyToJob(jobId);
-      if (result) {
+      const { data, error } = await applicationService.applyToJob(jobId);
+      if (data) {
         setAppliedJobIds(prev => new Set([...prev, jobId]));
         toast.success('Application submitted successfully!');
-      } else {
-        toast.error('Failed to apply. Please try again.');
+      } else if (error) {
+        toast.error(error);
       }
     } catch (error) {
       console.error('Error applying to job:', error);
