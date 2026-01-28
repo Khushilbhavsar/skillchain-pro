@@ -157,8 +157,8 @@ export default function StudentApplications() {
           <TabsTrigger value="selected">Selected</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={selectedTab} className="space-y-4">
-          {filterApplications(selectedTab).map((app) => {
+        <TabsContent value={selectedTab} className="space-y-4 animate-fade-in">
+          {filterApplications(selectedTab).length > 0 ? filterApplications(selectedTab).map((app) => {
             const stepNumber = getStepNumber(app.status);
 
             return (
@@ -228,14 +228,24 @@ export default function StudentApplications() {
                 </CardContent>
               </Card>
             );
-          })}
+          }) : null}
 
-          {filterApplications(selectedTab).length === 0 && (
+          {filterApplications(selectedTab).length === 0 && applications.length > 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-semibold mb-2">No Applications Found</h3>
+                <h3 className="text-lg font-semibold mb-2">No Applications Here</h3>
                 <p className="text-muted-foreground">You don't have any applications in this category.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {applications.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
+                <p className="text-muted-foreground">Start applying to jobs to track your progress here.</p>
               </CardContent>
             </Card>
           )}

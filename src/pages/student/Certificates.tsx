@@ -145,9 +145,9 @@ export default function StudentCertificates() {
         </Card>
       </div>
 
-      {/* Certificates Grid */}
+      {/* Certificates Grid - animate container only */}
       {certificates.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
           {certificates.map((cert) => (
             <Card key={cert.id} className="overflow-hidden">
               <div className={`h-2 ${cert.verified ? 'bg-success' : 'bg-warning'}`} />

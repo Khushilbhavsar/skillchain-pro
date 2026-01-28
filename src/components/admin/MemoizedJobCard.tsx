@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Job } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-interface JobCardProps {
+interface MemoizedJobCardProps {
   job: Job;
   onView?: (job: Job) => void;
   onEdit?: (job: Job) => void;
@@ -37,7 +38,12 @@ const typeLabels = {
   contract: 'Contract',
 };
 
-export function JobCard({ job, onView, onEdit, onDelete }: JobCardProps) {
+export const MemoizedJobCard = memo(function MemoizedJobCard({ 
+  job, 
+  onView, 
+  onEdit, 
+  onDelete 
+}: MemoizedJobCardProps) {
   const formatPackage = (min: number, max: number) => {
     const formatValue = (val: number) => {
       if (val >= 100000) return `${(val / 100000).toFixed(1)}L`;
@@ -144,4 +150,9 @@ export function JobCard({ job, onView, onEdit, onDelete }: JobCardProps) {
       </CardContent>
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for memoization
+  return prevProps.job.id === nextProps.job.id && 
+         prevProps.job.status === nextProps.job.status &&
+         prevProps.job.applicantsCount === nextProps.job.applicantsCount;
+});

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { StudentTable } from '@/components/admin/StudentTable';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { SearchAndFilter, FilterState } from '@/components/search/SearchAndFilter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/EmptyState';
 import { studentService, StudentData } from '@/services/supabase/studentService';
 
 const departmentOptions = [
@@ -122,16 +123,24 @@ export default function StudentsPage() {
         statusOptions={statusOptions}
       />
 
-      <StudentTable students={tableStudents} />
-
-      {tableStudents.length === 0 && !loading && (
-        <div className="text-center py-12 text-muted-foreground">
-          {students.length === 0 
-            ? "No students registered yet. Students will appear here after they sign up."
-            : "No students found matching your criteria."
-          }
+      {tableStudents.length > 0 ? (
+        <div className="animate-fade-in">
+          <StudentTable students={tableStudents} />
         </div>
+      ) : students.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No Students Yet"
+          description="Students will appear here after they register for the placement portal."
+        />
+      ) : (
+        <EmptyState
+          icon={Users}
+          title="No Students Found"
+          description="No students match your current filters. Try adjusting your search criteria."
+        />
       )}
+
     </div>
   );
 }
