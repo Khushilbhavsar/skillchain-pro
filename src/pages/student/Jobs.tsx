@@ -210,8 +210,8 @@ export default function StudentJobs() {
         </Card>
       </div>
 
-      {/* Jobs Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Jobs Grid - animate container only */}
+      <div className="grid gap-4 md:grid-cols-2 animate-fade-in">
         {filteredJobs.map((job) => {
           const eligible = isEligible(job);
           const hasApplied = appliedJobIds.has(job.id);
@@ -307,12 +307,22 @@ export default function StudentJobs() {
         })}
       </div>
 
-      {filteredJobs.length === 0 && (
+      {filteredJobs.length === 0 && jobs.length > 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Briefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-semibold mb-2">No Jobs Found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or check back later.</p>
+            <h3 className="text-lg font-semibold mb-2">No Matching Jobs</h3>
+            <p className="text-muted-foreground">Try adjusting your search to find more opportunities.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {jobs.length === 0 && !loading && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Briefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+            <h3 className="text-lg font-semibold mb-2">No Jobs Available</h3>
+            <p className="text-muted-foreground">Check back later for new job openings from companies.</p>
           </CardContent>
         </Card>
       )}

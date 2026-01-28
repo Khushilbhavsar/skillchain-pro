@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { CompanyCard } from '@/components/admin/CompanyCard';
+import { MemoizedCompanyCard } from '@/components/admin/MemoizedCompanyCard';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import { SearchAndFilter, FilterState } from '@/components/search/SearchAndFilter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/EmptyState';
 import { companyServiceDB, CompanyData } from '@/services/supabase/companyService';
 
 const statusOptions = [
@@ -110,18 +111,24 @@ export default function CompaniesPage() {
       />
 
       {displayCompanies.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
           {displayCompanies.map((company) => (
-            <CompanyCard key={company.id} company={company} />
+            <MemoizedCompanyCard key={company.id} company={company} />
           ))}
         </div>
+      ) : companies.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="No Companies Yet"
+          description="Add recruiting partners to start posting jobs and managing placements."
+          action={{ label: 'Add Company', onClick: () => {} }}
+        />
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          {companies.length === 0 
-            ? "No companies registered yet. Add your first company to get started."
-            : "No companies found matching your criteria."
-          }
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="No Companies Found"
+          description="No companies match your current filters. Try adjusting your search."
+        />
       )}
     </div>
   );

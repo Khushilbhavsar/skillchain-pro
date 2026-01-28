@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Users, Eye, Edit, XCircle } from 'lucide-react';
+import { Plus, MoreVertical, Users, Eye, Edit, XCircle, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
 import { companyServiceDB } from '@/services/supabase/companyService';
@@ -122,7 +122,9 @@ export default function CompanyJobs() {
         <CardContent>
           {jobs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="mb-4">No jobs posted yet</p>
+              <Briefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg font-semibold mb-2">No Jobs Posted</h3>
+              <p className="mb-4">Create your first job posting to attract qualified candidates.</p>
               <Button onClick={() => navigate('/company/post-job')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Post Your First Job

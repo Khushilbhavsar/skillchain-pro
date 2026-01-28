@@ -33,7 +33,7 @@ export function CompanyCard({ company, onEdit, onDelete, onViewJobs }: CompanyCa
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 animate-fade-in overflow-hidden">
+    <Card className="group hover:shadow-lg transition-shadow overflow-hidden">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">

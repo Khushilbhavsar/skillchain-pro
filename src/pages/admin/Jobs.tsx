@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { JobCard } from '@/components/admin/JobCard';
+import { MemoizedJobCard } from '@/components/admin/MemoizedJobCard';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Briefcase } from 'lucide-react';
 import { SearchAndFilter, FilterState } from '@/components/search/SearchAndFilter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/EmptyState';
 import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
-
 const statusOptions = [
   { value: 'open', label: 'Open' },
   { value: 'closed', label: 'Closed' },
@@ -129,18 +129,24 @@ export default function JobsPage() {
       />
 
       {displayJobs.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
           {displayJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <MemoizedJobCard key={job.id} job={job} />
           ))}
         </div>
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title="No Jobs Posted Yet"
+          description="Create your first job posting to start receiving applications from students."
+          action={{ label: 'Post Job', onClick: () => {} }}
+        />
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          {jobs.length === 0 
-            ? "No jobs posted yet. Create your first job posting to get started."
-            : "No jobs found matching your criteria."
-          }
-        </div>
+        <EmptyState
+          icon={Briefcase}
+          title="No Jobs Found"
+          description="No jobs match your current filters. Try adjusting your search criteria."
+        />
       )}
     </div>
   );
