@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentService, StudentData } from '@/services/supabase/studentService';
+import { EditProfileDialog } from '@/components/student/EditProfileDialog';
 import { 
   User, 
   Mail, 
@@ -25,21 +26,22 @@ export default function StudentProfile() {
   const { profile } = useAuth();
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const loadStudent = useCallback(async () => {
+    try {
+      const data = await studentService.getCurrentStudent();
+      setStudent(data);
+    } catch (error) {
+      console.error('Error loading student profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadStudent = async () => {
-      try {
-        const data = await studentService.getCurrentStudent();
-        setStudent(data);
-      } catch (error) {
-        console.error('Error loading student profile:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadStudent();
-  }, []);
+  }, [loadStudent]);
 
   const placementStatusConfig: Record<string, { label: string; color: string }> = {
     placed: { label: 'Placed', color: 'bg-success text-success-foreground' },
@@ -106,11 +108,18 @@ export default function StudentProfile() {
           <h1 className="text-3xl font-display font-bold">My Profile</h1>
           <p className="text-muted-foreground">Manage your personal and academic information</p>
         </div>
-        <Button>
+        <Button onClick={() => setEditDialogOpen(true)}>
           <Edit className="w-4 h-4 mr-2" />
           Edit Profile
         </Button>
       </div>
+
+      <EditProfileDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        student={student}
+        onSuccess={loadStudent}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile Card */}
