@@ -25,6 +25,37 @@ export interface ApplicationData {
   };
 }
 
+// Helper function to send status change notification
+async function sendStatusNotification(
+  applicationId: string,
+  newStatus: string,
+  studentEmail: string,
+  studentName: string,
+  jobTitle: string,
+  companyName: string
+): Promise<void> {
+  try {
+    const { error } = await supabase.functions.invoke('send-status-notification', {
+      body: {
+        applicationId,
+        newStatus,
+        studentEmail,
+        studentName,
+        jobTitle,
+        companyName,
+      },
+    });
+
+    if (error) {
+      console.error('Failed to send status notification:', error);
+    } else {
+      console.log('Status notification sent successfully');
+    }
+  } catch (err) {
+    console.error('Error invoking notification function:', err);
+  }
+}
+
 export const applicationService = {
   // Get applications for current student
   async getStudentApplications(): Promise<ApplicationData[]> {
@@ -147,8 +178,17 @@ export const applicationService = {
     return { data, error: null };
   },
 
-  // Update application status (for admin/company)
-  async updateApplicationStatus(id: string, status: string): Promise<ApplicationData | null> {
+  // Update application status (for admin/company) with email notification
+  async updateApplicationStatus(
+    id: string, 
+    status: string,
+    notificationData?: {
+      studentEmail: string;
+      studentName: string;
+      jobTitle: string;
+      companyName: string;
+    }
+  ): Promise<ApplicationData | null> {
     const { data, error } = await supabase
       .from('applications')
       .update({ status })
@@ -159,6 +199,18 @@ export const applicationService = {
     if (error) {
       console.error('Error updating application:', error);
       return null;
+    }
+
+    // Send email notification if data is provided
+    if (notificationData) {
+      await sendStatusNotification(
+        id,
+        status,
+        notificationData.studentEmail,
+        notificationData.studentName,
+        notificationData.jobTitle,
+        notificationData.companyName
+      );
     }
 
     return data;

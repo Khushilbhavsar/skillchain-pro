@@ -78,17 +78,26 @@ export default function Applicants() {
     loadData();
   }, [searchParams]);
 
-  const handleStatusChange = async (applicationId: string, newStatus: string) => {
+  const handleStatusChange = async (applicationId: string, newStatus: string, application: ApplicationData) => {
     setUpdating(applicationId);
     try {
-      const result = await applicationService.updateApplicationStatus(applicationId, newStatus);
+      const result = await applicationService.updateApplicationStatus(
+        applicationId, 
+        newStatus,
+        {
+          studentEmail: application.student?.email || '',
+          studentName: application.student?.full_name || 'Applicant',
+          jobTitle: application.job?.title || 'Position',
+          companyName: application.job?.company?.name || 'Company',
+        }
+      );
       if (result) {
         setApplications(applications.map(a =>
           a.id === applicationId ? { ...a, status: newStatus } : a
         ));
         toast({
           title: 'Status Updated',
-          description: `Applicant status changed to ${newStatus}.`,
+          description: `Applicant status changed to ${newStatus}. Email notification sent.`,
         });
       } else {
         throw new Error('Update failed');
@@ -282,7 +291,7 @@ export default function Applicants() {
                         </Button>
                         <Select
                           value={application.status}
-                          onValueChange={(value) => handleStatusChange(application.id, value)}
+                          onValueChange={(value) => handleStatusChange(application.id, value, application)}
                           disabled={updating === application.id}
                         >
                           <SelectTrigger className="w-[130px] h-8">
