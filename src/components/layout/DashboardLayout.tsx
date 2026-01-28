@@ -41,6 +41,7 @@ import { NotificationCenter } from '@/components/notifications/NotificationCente
 import { OnboardingTooltip } from '@/components/onboarding/OnboardingTooltip';
 import { adminOnboardingSteps } from '@/config/onboardingSteps';
 import Logo from '@/components/Logo';
+import { EmailVerificationBanner } from '@/components/auth/EmailVerificationBanner';
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, onboardingId: 'dashboard' },
@@ -54,7 +55,7 @@ const menuItems = [
 ];
 
 export function DashboardLayout() {
-  const { profile, role, signOut } = useAuth();
+  const { profile, role, signOut, user, isEmailVerified } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -142,6 +143,9 @@ export function DashboardLayout() {
             <ThemeToggle data-onboarding="theme" />
           </header>
           <div className="flex-1 p-6 overflow-auto">
+            {user && !isEmailVerified && (
+              <EmailVerificationBanner email={user.email || ''} />
+            )}
             <Outlet />
           </div>
         </main>
