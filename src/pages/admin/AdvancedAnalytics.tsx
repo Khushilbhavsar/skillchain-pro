@@ -37,19 +37,20 @@ export default function AdvancedAnalytics() {
   const [yearComparison, setYearComparison] = useState<{ year: string; placed: number; total: number }[]>([]);
   const [topRecruiters, setTopRecruiters] = useState<{ company: string; hires: number; package: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const filterOptions = analyticsService.getFilterOptions();
+  const [filterOptions, setFilterOptions] = useState<{ years: string[]; departments: string[] }>({ years: [], departments: [] });
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [statsData, deptData, skillData, monthlyDataResult, yearData, recruiters] = await Promise.all([
+        const [statsData, deptData, skillData, monthlyDataResult, yearData, recruiters, options] = await Promise.all([
           analyticsService.getPlacementStats(filters),
           analyticsService.getDepartmentStats(filters),
           analyticsService.getSkillDemand(filters),
           analyticsService.getMonthlyPlacements(filters),
           analyticsService.getYearComparison(),
           analyticsService.getTopRecruiters(),
+          analyticsService.getFilterOptions(),
         ]);
         setStats(statsData);
         setDeptStats(deptData);
@@ -57,6 +58,7 @@ export default function AdvancedAnalytics() {
         setMonthlyData(monthlyDataResult);
         setYearComparison(yearData);
         setTopRecruiters(recruiters);
+        setFilterOptions(options);
       } catch (error) {
         console.error('Failed to load analytics:', error);
       } finally {
