@@ -94,10 +94,22 @@ export const applicationService = {
     return data || [];
   },
 
-  // Apply to a job
-  async applyToJob(jobId: string): Promise<ApplicationData | null> {
+  // Apply to a job (with duplicate check)
+  async applyToJob(jobId: string): Promise<{ data: ApplicationData | null; error: string | null }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return { data: null, error: 'Not authenticated' };
+
+    // Check for existing application
+    const { data: existing } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('student_id', user.id)
+      .eq('job_id', jobId)
+      .maybeSingle();
+
+    if (existing) {
+      return { data: null, error: 'You have already applied to this job' };
+    }
 
     const { data, error } = await supabase
       .from('applications')
@@ -111,10 +123,28 @@ export const applicationService = {
 
     if (error) {
       console.error('Error applying to job:', error);
-      return null;
+      return { data: null, error: 'Failed to submit application' };
     }
 
-    return data;
+    // Update applicants count on the job (best effort, won't fail if this fails)
+    try {
+      const { data: job } = await supabase
+        .from('jobs')
+        .select('applicants_count')
+        .eq('id', jobId)
+        .single();
+      
+      if (job) {
+        await supabase
+          .from('jobs')
+          .update({ applicants_count: (job.applicants_count || 0) + 1 })
+          .eq('id', jobId);
+      }
+    } catch {
+      // Ignore count update errors
+    }
+
+    return { data, error: null };
   },
 
   // Update application status (for admin/company)

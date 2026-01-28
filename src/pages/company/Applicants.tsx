@@ -28,11 +28,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, GraduationCap, Mail, Phone, Star } from 'lucide-react';
-import { companyService } from '@/services/companyService';
-import { jobService, ApplicationStatus } from '@/services/jobService';
-import { Job, Application, Student } from '@/types';
+import { Users, GraduationCap, Mail, Star } from 'lucide-react';
+import { applicationService, ApplicationData } from '@/services/supabase/applicationService';
+import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
 import { useToast } from '@/hooks/use-toast';
+import { EmptyState } from '@/components/EmptyState';
 
 const statusStyles: Record<string, string> = {
   applied: 'bg-info/10 text-info border-info/20',
@@ -42,24 +42,27 @@ const statusStyles: Record<string, string> = {
   rejected: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-type ApplicantWithStudent = Application & { student: Student | undefined };
-
 export default function Applicants() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
-  const [applicants, setApplicants] = useState<ApplicantWithStudent[]>([]);
+  const [applications, setApplications] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedApplicant, setSelectedApplicant] = useState<ApplicantWithStudent | null>(null);
+  const [selectedApplicant, setSelectedApplicant] = useState<ApplicationData | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const company = await companyService.getCurrentCompany();
-        const companyJobs = await jobService.getJobsByCompany(company.id);
-        setJobs(companyJobs);
+        // Get all jobs (company can see all jobs they have access to)
+        const allJobs = await jobServiceDB.getAllJobs();
+        setJobs(allJobs);
+
+        // Get all applications
+        const allApplications = await applicationService.getAllApplications();
+        setApplications(allApplications);
 
         const jobIdParam = searchParams.get('jobId');
         if (jobIdParam) {
@@ -75,49 +78,37 @@ export default function Applicants() {
     loadData();
   }, [searchParams]);
 
-  useEffect(() => {
-    const loadApplicants = async () => {
-      if (selectedJobId === 'all') {
-        // Load all applicants for all jobs
-        const allApplicants: ApplicantWithStudent[] = [];
-        for (const job of jobs) {
-          const jobApplicants = await jobService.getApplicantsByJob(job.id);
-          allApplicants.push(...jobApplicants);
-        }
-        setApplicants(allApplicants);
-      } else {
-        const jobApplicants = await jobService.getApplicantsByJob(selectedJobId);
-        setApplicants(jobApplicants);
-      }
-    };
-
-    if (jobs.length > 0) {
-      loadApplicants();
-    }
-  }, [selectedJobId, jobs]);
-
-  const handleStatusChange = async (applicationId: string, newStatus: ApplicationStatus) => {
+  const handleStatusChange = async (applicationId: string, newStatus: string) => {
+    setUpdating(applicationId);
     try {
-      await jobService.updateApplicantStatus(applicationId, newStatus);
-      setApplicants(applicants.map(a =>
-        a.id === applicationId ? { ...a, status: newStatus } : a
-      ));
-      toast({
-        title: 'Status Updated',
-        description: `Applicant status changed to ${newStatus}.`,
-      });
+      const result = await applicationService.updateApplicationStatus(applicationId, newStatus);
+      if (result) {
+        setApplications(applications.map(a =>
+          a.id === applicationId ? { ...a, status: newStatus } : a
+        ));
+        toast({
+          title: 'Status Updated',
+          description: `Applicant status changed to ${newStatus}.`,
+        });
+      } else {
+        throw new Error('Update failed');
+      }
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to update status.',
         variant: 'destructive',
       });
+    } finally {
+      setUpdating(null);
     }
   };
 
-  const filteredApplicants = applicants.filter(a =>
-    statusFilter === 'all' || a.status === statusFilter
-  );
+  const filteredApplications = applications.filter(app => {
+    const matchesJob = selectedJobId === 'all' || app.job_id === selectedJobId;
+    const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+    return matchesJob && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -155,7 +146,6 @@ export default function Applicants() {
                     <Skeleton className="h-3 w-24" />
                   </div>
                   <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-16" />
                   <Skeleton className="h-6 w-20" />
                   <Skeleton className="h-8 w-24" />
                 </div>
@@ -219,18 +209,23 @@ export default function Applicants() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Applicants ({filteredApplicants.length})
+            Applicants ({filteredApplications.length})
           </CardTitle>
           <CardDescription>
-            {selectedJobId === 'all' ? 'All applicants across all jobs' : `Applicants for ${jobs.find(j => j.id === selectedJobId)?.title}`}
+            {selectedJobId === 'all' 
+              ? 'All applicants across all jobs' 
+              : `Applicants for ${jobs.find(j => j.id === selectedJobId)?.title}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredApplicants.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No applicants found</p>
-            </div>
+          {filteredApplications.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No Applicants Found"
+              description={applications.length === 0 
+                ? "No applications have been submitted yet." 
+                : "No applicants match your current filters."}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -244,36 +239,36 @@ export default function Applicants() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredApplicants.map((applicant) => (
-                  <TableRow key={applicant.id}>
+                {filteredApplications.map((application) => (
+                  <TableRow key={application.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
                           <AvatarFallback className="bg-primary/10 text-primary">
-                            {applicant.studentName.charAt(0)}
+                            {application.student?.full_name?.charAt(0) || '?'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{applicant.studentName}</p>
+                          <p className="font-medium">{application.student?.full_name || 'Unknown'}</p>
                           <p className="text-sm text-muted-foreground">
-                            {applicant.student?.department || 'N/A'}
+                            {application.student?.branch || 'N/A'}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{applicant.jobTitle}</TableCell>
+                    <TableCell>{application.job?.title || 'Unknown Job'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-500" />
-                        {applicant.student?.cgpa.toFixed(1) || 'N/A'}
+                        {application.student?.cgpa?.toFixed(1) || 'N/A'}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(applicant.appliedAt).toLocaleDateString()}
+                      {new Date(application.applied_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusStyles[applicant.status]} variant="outline">
-                        {applicant.status}
+                      <Badge className={statusStyles[application.status] || ''} variant="outline">
+                        {application.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -281,13 +276,14 @@ export default function Applicants() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedApplicant(applicant)}
+                          onClick={() => setSelectedApplicant(application)}
                         >
                           View
                         </Button>
                         <Select
-                          value={applicant.status}
-                          onValueChange={(value) => handleStatusChange(applicant.id, value as ApplicationStatus)}
+                          value={application.status}
+                          onValueChange={(value) => handleStatusChange(application.id, value)}
+                          disabled={updating === application.id}
                         >
                           <SelectTrigger className="w-[130px] h-8">
                             <SelectValue />
@@ -319,59 +315,56 @@ export default function Applicants() {
               View complete profile and update status
             </DialogDescription>
           </DialogHeader>
-          {selectedApplicant?.student && (
+          {selectedApplicant && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                    {selectedApplicant.studentName.charAt(0)}
+                    {selectedApplicant.student?.full_name?.charAt(0) || '?'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedApplicant.studentName}</h3>
-                  <p className="text-muted-foreground">{selectedApplicant.student.rollNumber}</p>
+                  <h3 className="text-lg font-semibold">
+                    {selectedApplicant.student?.full_name || 'Unknown'}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {selectedApplicant.student?.email || 'No email'}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedApplicant.student.department}</span>
+                  <span>{selectedApplicant.student?.branch || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Star className="w-4 h-4 text-yellow-500" />
-                  <span>CGPA: {selectedApplicant.student.cgpa}</span>
+                  <span>CGPA: {selectedApplicant.student?.cgpa || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedApplicant.student.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedApplicant.student.phone}</span>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium mb-2">Skills</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedApplicant.student.skills.map(skill => (
-                    <Badge key={skill.id} variant="secondary">
-                      {skill.name}
-                      {skill.verified && <span className="ml-1 text-green-500">✓</span>}
-                    </Badge>
-                  ))}
+                  <span>{selectedApplicant.student?.email || 'N/A'}</span>
                 </div>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium mb-2">Applied For</h4>
-                <p className="text-muted-foreground">{selectedApplicant.jobTitle}</p>
+                <p className="text-muted-foreground">
+                  {selectedApplicant.job?.title} at {selectedApplicant.job?.company?.name}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Application Date</h4>
+                <p className="text-muted-foreground">
+                  {new Date(selectedApplicant.applied_at).toLocaleDateString()}
+                </p>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium mb-2">Current Status</h4>
-                <Badge className={statusStyles[selectedApplicant.status]} variant="outline">
+                <Badge className={statusStyles[selectedApplicant.status] || ''} variant="outline">
                   {selectedApplicant.status}
                 </Badge>
               </div>
