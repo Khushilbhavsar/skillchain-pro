@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface LogoProps {
   size?: number;
@@ -6,12 +6,14 @@ interface LogoProps {
 }
 
 const Logo = ({ size = 64, className = '' }: LogoProps) => {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <motion.div
+    <div
       className={`relative ${className}`}
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      style={{
+        animation: prefersReducedMotion ? 'none' : 'logo-enter 0.5s ease-out',
+      }}
     >
       <svg
         width={size}
@@ -19,6 +21,7 @@ const Logo = ({ size = 64, className = '' }: LogoProps) => {
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        className="logo-svg"
       >
         <defs>
           <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -40,32 +43,28 @@ const Logo = ({ size = 64, className = '' }: LogoProps) => {
         </defs>
         
         {/* Outer hexagon ring */}
-        <motion.path
+        <path
           d="M50 5 L87 27.5 L87 72.5 L50 95 L13 72.5 L13 27.5 Z"
           stroke="url(#logoGradient)"
           strokeWidth="3"
           fill="none"
           filter="url(#glow)"
-          initial={{ pathLength: 0, rotate: -30 }}
-          animate={{ pathLength: 1, rotate: 0 }}
-          transition={{ duration: 1.5, ease: 'easeInOut' }}
+          className="logo-ring"
+          style={{
+            strokeDasharray: 280,
+            strokeDashoffset: prefersReducedMotion ? 0 : undefined,
+          }}
         />
         
         {/* Inner hexagon filled */}
-        <motion.path
+        <path
           d="M50 15 L78 32.5 L78 67.5 L50 85 L22 67.5 L22 32.5 Z"
           fill="url(#innerGradient)"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
+          className="logo-inner"
         />
         
         {/* Central P letter stylized */}
-        <motion.g
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
+        <g className="logo-letter">
           {/* P stem */}
           <rect
             x="38"
@@ -83,38 +82,32 @@ const Logo = ({ size = 64, className = '' }: LogoProps) => {
             strokeLinecap="round"
             fill="none"
           />
-        </motion.g>
+        </g>
         
         {/* Decorative dots */}
-        <motion.circle
+        <circle
           cx="50"
           cy="10"
           r="3"
           fill="hsl(var(--primary))"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3, delay: 1 }}
+          className="logo-dot"
         />
-        <motion.circle
+        <circle
           cx="85"
           cy="30"
           r="2.5"
           fill="hsl(var(--accent))"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3, delay: 1.1 }}
+          className="logo-dot"
         />
-        <motion.circle
+        <circle
           cx="85"
           cy="70"
           r="2.5"
           fill="hsl(var(--secondary))"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3, delay: 1.2 }}
+          className="logo-dot"
         />
       </svg>
-    </motion.div>
+    </div>
   );
 };
 
