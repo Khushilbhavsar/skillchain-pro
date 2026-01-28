@@ -172,3 +172,95 @@
     @apply bg-card rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow;
   }
 }
+
+/* Logo CSS animations - more performant than JS */
+@keyframes logo-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes logo-ring-draw {
+  from {
+    stroke-dashoffset: 280;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logo-fade-scale {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.logo-svg .logo-ring {
+  stroke-dasharray: 280;
+  stroke-dashoffset: 0;
+  animation: logo-ring-draw 1s ease-out forwards;
+}
+
+.logo-svg .logo-inner {
+  animation: logo-fade-scale 0.6s ease-out 0.2s both;
+  transform-origin: center;
+}
+
+.logo-svg .logo-letter {
+  animation: logo-fade-scale 0.5s ease-out 0.5s both;
+  transform-origin: center;
+}
+
+.logo-svg .logo-dot {
+  animation: logo-fade-scale 0.3s ease-out both;
+}
+
+.logo-svg .logo-dot:nth-child(5) {
+  animation-delay: 0.8s;
+}
+
+.logo-svg .logo-dot:nth-child(6) {
+  animation-delay: 0.9s;
+}
+
+.logo-svg .logo-dot:nth-child(7) {
+  animation-delay: 1s;
+}
+
+/* Reduced motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .logo-svg .logo-ring,
+  .logo-svg .logo-inner,
+  .logo-svg .logo-letter,
+  .logo-svg .logo-dot {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+
+  .animate-fade-in,
+  .animate-slide-in {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
