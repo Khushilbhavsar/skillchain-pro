@@ -1,40 +1,122 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Certificate, VerificationResult } from '@/types';
-import { mockCertificates } from '@/services/mockData';
+import { certificateServiceDB, CertificateData } from '@/services/supabase/certificateService';
 import { Shield, Search, CheckCircle, XCircle, Clock, ExternalLink, Copy, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+interface Certificate {
+  id: string;
+  studentId: string;
+  studentName: string;
+  type: string;
+  title: string;
+  issuer: string;
+  issueDate: string;
+  transactionHash: string;
+  blockNumber: number;
+  verified: boolean;
+  metadata: Record<string, string>;
+}
+
+interface VerificationResult {
+  isValid: boolean;
+  certificate?: Certificate;
+  error?: string;
+  timestamp: string;
+}
 
 export function VerificationForm() {
   const [transactionHash, setTransactionHash] = useState('');
   const [certificateId, setCertificateId] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [sampleCertificates, setSampleCertificates] = useState<Certificate[]>([]);
+
+  useEffect(() => {
+    const loadCertificates = async () => {
+      try {
+        const data = await certificateServiceDB.getAllCertificates();
+        const converted: Certificate[] = data.map(cert => ({
+          id: cert.id,
+          studentId: cert.student_id,
+          studentName: cert.student?.full_name || 'Unknown Student',
+          type: 'skill',
+          title: cert.title,
+          issuer: cert.issuer,
+          issueDate: cert.issue_date || cert.created_at,
+          transactionHash: cert.blockchain_hash || '',
+          blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
+          verified: cert.verified,
+          metadata: {},
+        }));
+        setSampleCertificates(converted);
+      } catch (error) {
+        console.error('Error loading certificates:', error);
+      }
+    };
+    loadCertificates();
+  }, []);
 
   const simulateVerification = async (hash?: string, certId?: string): Promise<VerificationResult> => {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    const cert = mockCertificates.find(
-      c => c.transactionHash === hash || c.id === certId
-    );
-
-    if (cert) {
-      return {
-        isValid: true,
-        certificate: cert,
-        timestamp: new Date().toISOString(),
-      };
+    // Try to find by hash first
+    if (hash) {
+      const cert = await certificateServiceDB.verifyCertificateByHash(hash);
+      if (cert) {
+        return {
+          isValid: true,
+          certificate: {
+            id: cert.id,
+            studentId: cert.student_id,
+            studentName: cert.student?.full_name || 'Unknown',
+            type: 'skill',
+            title: cert.title,
+            issuer: cert.issuer,
+            issueDate: cert.issue_date || cert.created_at,
+            transactionHash: cert.blockchain_hash || '',
+            blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
+            verified: cert.verified,
+            metadata: {},
+          },
+          timestamp: new Date().toISOString(),
+        };
+      }
+    }
+    
+    // Try to find by ID
+    if (certId) {
+      const cert = await certificateServiceDB.getCertificateById(certId);
+      if (cert) {
+        return {
+          isValid: true,
+          certificate: {
+            id: cert.id,
+            studentId: cert.student_id,
+            studentName: cert.student?.full_name || 'Unknown',
+            type: 'skill',
+            title: cert.title,
+            issuer: cert.issuer,
+            issueDate: cert.issue_date || cert.created_at,
+            transactionHash: cert.blockchain_hash || '',
+            blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
+            verified: cert.verified,
+            metadata: {},
+          },
+          timestamp: new Date().toISOString(),
+        };
+      }
     }
 
     return {
       isValid: false,
-      error: 'Certificate not found on the blockchain. Please verify the hash or ID.',
+      error: 'Certificate not found. Please verify the hash or ID.',
       timestamp: new Date().toISOString(),
     };
   };
@@ -118,7 +200,7 @@ export function VerificationForm() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Enter the transaction hash from the certificate to verify its authenticity on Ethereum/Polygon.
+                Enter the transaction hash from the certificate to verify its authenticity.
               </p>
             </TabsContent>
 
@@ -128,7 +210,7 @@ export function VerificationForm() {
                 <div className="flex gap-2">
                   <Input
                     id="certId"
-                    placeholder="cert1, cert2, etc."
+                    placeholder="Certificate UUID"
                     value={certificateId}
                     onChange={(e) => setCertificateId(e.target.value)}
                   />
@@ -212,45 +294,36 @@ export function VerificationForm() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Block Number</p>
-                  <p className="font-mono text-sm">{result.certificate.blockNumber.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Verified</p>
+                  <Badge variant={result.certificate.verified ? 'default' : 'secondary'}>
+                    {result.certificate.verified ? 'Yes' : 'Pending'}
+                  </Badge>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Transaction Hash</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 p-3 bg-muted rounded-lg text-sm font-mono break-all">
-                    {result.certificate.transactionHash}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(result.certificate!.transactionHash)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" asChild>
-                    <a
-                      href={`https://etherscan.io/tx/${result.certificate.transactionHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
-
-              {Object.keys(result.certificate.metadata).length > 0 && (
+              {result.certificate.transactionHash && (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Additional Metadata</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(result.certificate.metadata).map(([key, value]) => (
-                      <Badge key={key} variant="secondary">
-                        {key}: {value}
-                      </Badge>
-                    ))}
+                  <p className="text-sm text-muted-foreground">Transaction Hash</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 p-3 bg-muted rounded-lg text-sm font-mono break-all">
+                      {result.certificate.transactionHash}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(result.certificate!.transactionHash)}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" asChild>
+                      <a
+                        href={`https://polygonscan.com/tx/${result.certificate.transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -265,38 +338,40 @@ export function VerificationForm() {
         </Card>
       )}
 
-      {/* Recent Verifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Sample Certificates (For Testing)</CardTitle>
-          <CardDescription>
-            Use these certificate IDs to test the verification system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {mockCertificates.map((cert) => (
-              <div
-                key={cert.id}
-                className="p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
-                onClick={() => {
-                  setCertificateId(cert.id);
-                  toast.info(`Certificate ID "${cert.id}" copied to input`);
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <FileText className="w-5 h-5 text-primary mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{cert.title}</p>
-                    <p className="text-xs text-muted-foreground">{cert.studentName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">ID: {cert.id}</p>
+      {/* Sample Certificates */}
+      {sampleCertificates.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Available Certificates (For Testing)</CardTitle>
+            <CardDescription>
+              Click on a certificate to copy its ID to the input
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {sampleCertificates.slice(0, 6).map((cert) => (
+                <div
+                  key={cert.id}
+                  className="p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setCertificateId(cert.id);
+                    toast.info('Certificate ID copied to input');
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-primary mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{cert.title}</p>
+                      <p className="text-xs text-muted-foreground">{cert.studentName}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">ID: {cert.id.slice(0, 8)}...</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

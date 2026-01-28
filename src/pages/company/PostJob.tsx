@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,26 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Briefcase } from 'lucide-react';
-import { companyService } from '@/services/companyService';
-import { jobService, JobFormData } from '@/services/jobService';
+import { companyServiceDB } from '@/services/supabase/companyService';
+import { jobServiceDB } from '@/services/supabase/jobServiceDB';
 import { useToast } from '@/hooks/use-toast';
+
+export interface JobFormData {
+  title: string;
+  description: string;
+  type: 'full_time' | 'internship' | 'contract';
+  locations: string[];
+  packageMin: number;
+  packageMax: number;
+  eligibilityCriteria: {
+    minCgpa: number;
+    departments: string[];
+    skills: string[];
+    backlogs: number;
+  };
+  applicationDeadline: string;
+  driveDate?: string;
+}
 
 const departments = [
   'Computer Science',
@@ -40,6 +57,8 @@ export default function PostJob() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -58,13 +77,47 @@ export default function PostJob() {
     driveDate: '',
   });
 
+  useEffect(() => {
+    const loadCompanies = async () => {
+      const data = await companyServiceDB.getAllCompanies();
+      setCompanies(data.map(c => ({ id: c.id, name: c.name })));
+      if (data.length > 0) {
+        setSelectedCompanyId(data[0].id);
+      }
+    };
+    loadCompanies();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedCompanyId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a company.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const company = await companyService.getCurrentCompany();
-      await jobService.createJob(company.id, company.name, formData);
+      await jobServiceDB.createJob({
+        company_id: selectedCompanyId,
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        locations: formData.locations,
+        package_min: formData.packageMin,
+        package_max: formData.packageMax,
+        eligibility_min_cgpa: formData.eligibilityCriteria.minCgpa,
+        eligibility_departments: formData.eligibilityCriteria.departments,
+        eligibility_skills: formData.eligibilityCriteria.skills,
+        eligibility_max_backlogs: formData.eligibilityCriteria.backlogs,
+        application_deadline: formData.applicationDeadline,
+        drive_date: formData.driveDate || null,
+        status: 'open',
+      });
 
       toast({
         title: 'Job Posted Successfully',
@@ -132,6 +185,22 @@ export default function PostJob() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor="company">Company *</Label>
+                <Select
+                  value={selectedCompanyId}
+                  onValueChange={setSelectedCompanyId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="title">Job Title *</Label>
                 <Input
                   id="title"
@@ -141,22 +210,23 @@ export default function PostJob() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Job Type *</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={value => setFormData(prev => ({ ...prev, type: value as JobFormData['type'] }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full_time">Full Time</SelectItem>
-                    <SelectItem value="internship">Internship</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Job Type *</Label>
+              <Select
+                value={formData.type}
+                onValueChange={value => setFormData(prev => ({ ...prev, type: value as JobFormData['type'] }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_time">Full Time</SelectItem>
+                  <SelectItem value="internship">Internship</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

@@ -1,31 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VerificationForm } from '@/components/admin/VerificationForm';
 import { TransactionHistory } from '@/components/admin/TransactionHistory';
 import { CertificateStatusGrid } from '@/components/admin/CertificateStatusGrid';
 import { BlockchainStats } from '@/components/admin/BlockchainStats';
 import { CertificateIssueForm } from '@/components/admin/CertificateIssueForm';
-import { mockCertificates, mockTransactions } from '@/services/mockData';
-import { Certificate } from '@/types';
+import { certificateServiceDB, CertificateData } from '@/services/supabase/certificateService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, History, Grid3X3, Activity, FilePlus } from 'lucide-react';
 
+import { Certificate, BlockchainTransaction } from '@/types';
+
 export default function VerificationPage() {
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
 
+  useEffect(() => {
+    const loadCertificates = async () => {
+      try {
+        const data = await certificateServiceDB.getAllCertificates();
+        // Convert to Certificate format
+        const converted: Certificate[] = data.map(cert => ({
+          id: cert.id,
+          studentId: cert.student_id,
+          studentName: cert.student?.full_name || 'Unknown Student',
+          type: 'skill' as const,
+          title: cert.title,
+          issuer: cert.issuer,
+          issueDate: cert.issue_date || cert.created_at,
+          transactionHash: cert.blockchain_hash || '',
+          blockNumber: 0,
+          verified: cert.verified,
+          metadata: {},
+        }));
+        setCertificates(converted);
+      } catch (error) {
+        console.error('Error loading certificates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCertificates();
+  }, []);
+
+  // Generate mock transactions from certificates (blockchain feature is simulated)
+  const transactions: BlockchainTransaction[] = certificates
+    .filter(c => c.transactionHash)
+    .map(c => ({
+      hash: c.transactionHash,
+      type: 'issue' as const,
+      status: (c.verified ? 'confirmed' : 'pending') as 'confirmed' | 'pending' | 'failed',
+      blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
+      timestamp: c.issueDate,
+      gasUsed: 21000 + Math.floor(Math.random() * 5000),
+      certificateId: c.id,
+      from: '0x742d35Cc6634C0532925a3b844Bc9e7595f1b',
+      to: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
+    }));
+
   const blockchainStats = {
-    totalCertificates: mockCertificates.length,
-    verifiedCertificates: mockCertificates.filter(c => c.verified).length,
-    pendingVerifications: mockCertificates.filter(c => !c.verified).length,
-    totalTransactions: mockTransactions.length,
-    latestBlock: Math.max(...mockTransactions.map(t => t.blockNumber)),
-    avgGasUsed: Math.round(mockTransactions.reduce((sum, t) => sum + t.gasUsed, 0) / mockTransactions.length),
+    totalCertificates: certificates.length,
+    verifiedCertificates: certificates.filter(c => c.verified).length,
+    pendingVerifications: certificates.filter(c => !c.verified).length,
+    totalTransactions: transactions.length,
+    latestBlock: transactions.length > 0 ? Math.max(...transactions.map(t => t.blockNumber)) : 0,
+    avgGasUsed: transactions.length > 0 
+      ? Math.round(transactions.reduce((sum, t) => sum + t.gasUsed, 0) / transactions.length)
+      : 0,
   };
 
   const handleVerifyCertificate = (certificate: Certificate) => {
     setSelectedCertificate(certificate);
-    // Scroll to verification form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -72,13 +142,13 @@ export default function VerificationPage() {
 
         <TabsContent value="certificates">
           <CertificateStatusGrid 
-            certificates={mockCertificates} 
+            certificates={certificates} 
             onVerify={handleVerifyCertificate}
           />
         </TabsContent>
 
         <TabsContent value="transactions">
-          <TransactionHistory transactions={mockTransactions} />
+          <TransactionHistory transactions={transactions} />
         </TabsContent>
 
         <TabsContent value="network">
@@ -135,7 +205,7 @@ export default function VerificationPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Total Issuances</span>
-                  <span className="font-medium">{mockCertificates.length}</span>
+                  <span className="font-medium">{certificates.length}</span>
                 </div>
               </div>
             </div>

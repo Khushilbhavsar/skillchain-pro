@@ -30,7 +30,9 @@ import {
 } from '@/components/ui/table';
 import { Calendar, Clock, Plus, MapPin, Users, Trash2, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
 import { interviewService, InterviewSlot, PlacementDrive } from '@/services/interviewService';
-import { mockStudents, mockJobs, mockCompanies } from '@/services/mockData';
+import { companyServiceDB, CompanyData } from '@/services/supabase/companyService';
+import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
+import { studentService, StudentData } from '@/services/supabase/studentService';
 import { useToast } from '@/hooks/use-toast';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -52,6 +54,11 @@ export default function InterviewScheduling() {
   const [loading, setLoading] = useState(true);
   const [showCreateSlot, setShowCreateSlot] = useState(false);
   const [showAssignStudent, setShowAssignStudent] = useState<string | null>(null);
+  
+  // Real data from Supabase
+  const [companies, setCompanies] = useState<CompanyData[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
 
   const [newSlot, setNewSlot] = useState({
     date: '',
@@ -71,12 +78,18 @@ export default function InterviewScheduling() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [drivesData, slotsData] = await Promise.all([
+      const [drivesData, slotsData, companiesData, jobsData, studentsData] = await Promise.all([
         interviewService.getPlacementDrives(),
         interviewService.getInterviewSlots(),
+        companyServiceDB.getAllCompanies(),
+        jobServiceDB.getAllJobs(),
+        studentService.getAllStudents(),
       ]);
       setDrives(drivesData);
       setSlots(slotsData);
+      setCompanies(companiesData);
+      setJobs(jobsData);
+      setStudents(studentsData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -111,8 +124,8 @@ export default function InterviewScheduling() {
 
   const handleCreateSlot = async () => {
     try {
-      const company = mockCompanies.find(c => c.id === newSlot.companyId);
-      const job = mockJobs.find(j => j.id === newSlot.jobId);
+      const company = companies.find(c => c.id === newSlot.companyId);
+      const job = jobs.find(j => j.id === newSlot.jobId);
       if (!company || !job) return;
 
       await interviewService.createSlot({
@@ -162,6 +175,9 @@ export default function InterviewScheduling() {
 
   const selectedDateSlots = selectedDate ? slots.filter(s => s.date === selectedDate) : [];
   const selectedDateDrives = selectedDate ? drives.filter(d => d.date === selectedDate) : [];
+
+  // Filter jobs by selected company
+  const filteredJobs = jobs.filter(j => j.company_id === newSlot.companyId);
 
   if (loading) {
     return (
@@ -216,10 +232,10 @@ export default function InterviewScheduling() {
               </div>
               <div>
                 <Label>Company</Label>
-                <Select value={newSlot.companyId} onValueChange={(value) => setNewSlot(prev => ({ ...prev, companyId: value }))}>
+                <Select value={newSlot.companyId} onValueChange={(value) => setNewSlot(prev => ({ ...prev, companyId: value, jobId: '' }))}>
                   <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
                   <SelectContent>
-                    {mockCompanies.map(c => (
+                    {companies.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -230,7 +246,7 @@ export default function InterviewScheduling() {
                 <Select value={newSlot.jobId} onValueChange={(value) => setNewSlot(prev => ({ ...prev, jobId: value }))}>
                   <SelectTrigger><SelectValue placeholder="Select job" /></SelectTrigger>
                   <SelectContent>
-                    {mockJobs.filter(j => j.companyId === newSlot.companyId).map(j => (
+                    {filteredJobs.map(j => (
                       <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
                     ))}
                   </SelectContent>
@@ -280,7 +296,6 @@ export default function InterviewScheduling() {
                 const day = i + 1;
                 const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const { drives: dayDrives, slots: daySlots } = getEventsForDate(day);
-                const hasEvents = dayDrives.length > 0 || daySlots.length > 0;
                 const isSelected = selectedDate === dateStr;
 
                 return (
@@ -332,6 +347,9 @@ export default function InterviewScheduling() {
                 </p>
               </div>
             ))}
+            {drives.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">No upcoming drives</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -392,10 +410,10 @@ export default function InterviewScheduling() {
                         </div>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {slot.assignedStudents.map(studentId => {
-                            const student = mockStudents.find(s => s.id === studentId);
+                            const student = students.find(s => s.id === studentId);
                             return (
                               <Badge key={studentId} variant="secondary" className="text-xs gap-1">
-                                {student?.name.split(' ')[0]}
+                                {student?.full_name?.split(' ')[0] || 'Unknown'}
                                 <Trash2 className="w-3 h-3 cursor-pointer" onClick={() => handleRemoveStudent(slot.id, studentId)} />
                               </Badge>
                             );
@@ -414,18 +432,27 @@ export default function InterviewScheduling() {
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>Assign Student</DialogTitle>
-                                <DialogDescription>Select a student to assign to this slot</DialogDescription>
+                                <DialogDescription>Select a student to assign to this interview slot</DialogDescription>
                               </DialogHeader>
                               <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                {mockStudents.filter(s => !slot.assignedStudents.includes(s.id)).map(student => (
-                                  <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                                    <div>
-                                      <p className="font-medium">{student.name}</p>
-                                      <p className="text-sm text-muted-foreground">{student.department} | CGPA: {student.cgpa}</p>
+                                {students
+                                  .filter(s => !slot.assignedStudents.includes(s.id))
+                                  .map(student => (
+                                    <div
+                                      key={student.id}
+                                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
+                                      onClick={() => handleAssignStudent(slot.id, student.id)}
+                                    >
+                                      <div>
+                                        <p className="font-medium">{student.full_name}</p>
+                                        <p className="text-sm text-muted-foreground">{student.roll_number || student.email}</p>
+                                      </div>
+                                      <Badge variant="secondary">{student.branch || 'N/A'}</Badge>
                                     </div>
-                                    <Button size="sm" onClick={() => handleAssignStudent(slot.id, student.id)}>Assign</Button>
-                                  </div>
-                                ))}
+                                  ))}
+                                {students.filter(s => !slot.assignedStudents.includes(s.id)).length === 0 && (
+                                  <p className="text-center text-muted-foreground py-4">No students available</p>
+                                )}
                               </div>
                             </DialogContent>
                           </Dialog>
