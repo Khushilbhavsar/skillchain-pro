@@ -2,49 +2,51 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Briefcase, Users, CheckCircle, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { companyService } from '@/services/companyService';
-import { jobService } from '@/services/jobService';
-import { Job, Company } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
+import { companyServiceDB, CompanyData } from '@/services/supabase/companyService';
+import { applicationService } from '@/services/supabase/applicationService';
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [company, setCompany] = useState<Company | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [company, setCompany] = useState<CompanyData | null>(null);
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
     totalApplicants: 0,
     totalHires: 0,
   });
-  const [appStats, setAppStats] = useState({
-    total: 0,
-    applied: 0,
-    shortlisted: 0,
-    interviewed: 0,
-    selected: 0,
-    rejected: 0,
-  });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentCompany = await companyService.getCurrentCompany();
+        // Get all companies (in a real app, you'd filter by the logged-in company user)
+        const companies = await companyServiceDB.getAllCompanies();
+        const currentCompany = companies.length > 0 ? companies[0] : null;
         setCompany(currentCompany);
 
-        const [companyJobs, companyStats, applicationStats] = await Promise.all([
-          jobService.getJobsByCompany(currentCompany.id),
-          companyService.getCompanyStats(currentCompany.id),
-          jobService.getApplicationStats(currentCompany.id),
-        ]);
+        if (currentCompany) {
+          const companyJobs = await jobServiceDB.getJobsByCompany(currentCompany.id);
+          setJobs(companyJobs);
 
-        setJobs(companyJobs);
-        setStats(companyStats);
-        setAppStats(applicationStats);
+          // Calculate stats
+          const activeJobs = companyJobs.filter(j => j.status === 'open' || j.status === 'in_progress');
+          const totalApplicants = companyJobs.reduce((sum, j) => sum + j.applicants_count, 0);
+          const totalSelected = companyJobs.reduce((sum, j) => sum + j.selected_count, 0);
+
+          setStats({
+            totalJobs: companyJobs.length,
+            activeJobs: activeJobs.length,
+            totalApplicants: totalApplicants,
+            totalHires: currentCompany.total_hires || totalSelected,
+          });
+        }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -55,7 +57,8 @@ export default function CompanyDashboard() {
     loadData();
   }, []);
 
-  const formatPackage = (amount: number) => {
+  const formatPackage = (amount: number | null) => {
+    if (!amount) return '₹0';
     if (amount >= 100000) {
       return `₹${(amount / 100000).toFixed(1)}L`;
     }
@@ -64,8 +67,27 @@ export default function CompanyDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -102,8 +124,8 @@ export default function CompanyDashboard() {
             <Users className="h-4 w-4 text-secondary-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{appStats.total}</div>
-            <p className="text-xs text-muted-foreground">{appStats.shortlisted} shortlisted</p>
+            <div className="text-2xl font-bold">{stats.totalApplicants}</div>
+            <p className="text-xs text-muted-foreground">Across all jobs</p>
           </CardContent>
         </Card>
 
@@ -113,7 +135,7 @@ export default function CompanyDashboard() {
             <CheckCircle className="h-4 w-4 text-accent-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{appStats.selected}</div>
+            <div className="text-2xl font-bold">{stats.totalHires}</div>
             <p className="text-xs text-muted-foreground">Candidates selected</p>
           </CardContent>
         </Card>
@@ -129,31 +151,6 @@ export default function CompanyDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Application Pipeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Application Pipeline</CardTitle>
-          <CardDescription>Current status of all applications</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-4">
-            {[
-              { label: 'Applied', count: appStats.applied, color: 'bg-blue-500' },
-              { label: 'Shortlisted', count: appStats.shortlisted, color: 'bg-yellow-500' },
-              { label: 'Interviewed', count: appStats.interviewed, color: 'bg-purple-500' },
-              { label: 'Selected', count: appStats.selected, color: 'bg-green-500' },
-              { label: 'Rejected', count: appStats.rejected, color: 'bg-red-500' },
-            ].map((stage, index) => (
-              <div key={stage.label} className="text-center">
-                <div className={`${stage.color} h-2 rounded-full mb-2`} />
-                <p className="text-2xl font-bold">{stage.count}</p>
-                <p className="text-xs text-muted-foreground">{stage.label}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Recent Jobs */}
       <Card>
@@ -185,11 +182,11 @@ export default function CompanyDashboard() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {formatPackage(job.packageMin)} - {formatPackage(job.packageMax)} • {job.locations.join(', ')}
+                    {formatPackage(job.package_min)} - {formatPackage(job.package_max)} • {job.locations.join(', ') || 'Remote'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{job.applicantsCount}</p>
+                  <p className="font-medium">{job.applicants_count}</p>
                   <p className="text-xs text-muted-foreground">Applicants</p>
                 </div>
               </div>

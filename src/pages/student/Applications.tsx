@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockStudents, mockApplications, mockJobs } from '@/services/mockData';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   FileText, 
   CheckCircle2, 
@@ -11,45 +11,31 @@ import {
   Clock, 
   Building2,
   Calendar,
-  MapPin,
-  Banknote,
   ArrowRight,
   MessageSquare,
   Users
 } from 'lucide-react';
-
-// Using first student as the logged-in user
-const currentStudent = mockStudents[0];
-
-// Expanded mock applications for demo
-const studentApplications = [
-  ...mockApplications.filter(a => a.studentId === currentStudent.id),
-  {
-    id: 'app-2',
-    studentId: currentStudent.id,
-    studentName: currentStudent.name,
-    jobId: 'j2',
-    jobTitle: 'SDE Intern',
-    companyName: 'Amazon',
-    status: 'interviewed' as const,
-    appliedAt: '2024-02-10',
-    updatedAt: '2024-02-25',
-  },
-  {
-    id: 'app-3',
-    studentId: currentStudent.id,
-    studentName: currentStudent.name,
-    jobId: 'j3',
-    jobTitle: 'Product Manager',
-    companyName: 'Microsoft',
-    status: 'shortlisted' as const,
-    appliedAt: '2024-02-15',
-    updatedAt: '2024-02-20',
-  },
-];
+import { applicationService, ApplicationData } from '@/services/supabase/applicationService';
 
 export default function StudentApplications() {
   const [selectedTab, setSelectedTab] = useState('all');
+  const [applications, setApplications] = useState<ApplicationData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        const data = await applicationService.getStudentApplications();
+        setApplications(data);
+      } catch (error) {
+        console.error('Error loading applications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -77,18 +63,48 @@ export default function StudentApplications() {
   };
 
   const filterApplications = (tab: string) => {
-    if (tab === 'all') return studentApplications;
-    return studentApplications.filter(app => app.status === tab);
+    if (tab === 'all') return applications;
+    return applications.filter(app => app.status === tab);
   };
 
   const statusCounts = {
-    all: studentApplications.length,
-    applied: studentApplications.filter(a => a.status === 'applied').length,
-    shortlisted: studentApplications.filter(a => a.status === 'shortlisted').length,
-    interviewed: studentApplications.filter(a => a.status === 'interviewed').length,
-    selected: studentApplications.filter(a => a.status === 'selected').length,
-    rejected: studentApplications.filter(a => a.status === 'rejected').length,
+    all: applications.length,
+    applied: applications.filter(a => a.status === 'applied').length,
+    shortlisted: applications.filter(a => a.status === 'shortlisted').length,
+    interviewed: applications.filter(a => a.status === 'interviewed').length,
+    selected: applications.filter(a => a.status === 'selected').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6 text-center">
+                <Skeleton className="h-8 w-12 mx-auto mb-2" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="py-6">
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -143,7 +159,6 @@ export default function StudentApplications() {
 
         <TabsContent value={selectedTab} className="space-y-4">
           {filterApplications(selectedTab).map((app) => {
-            const job = mockJobs.find(j => j.id === app.jobId);
             const stepNumber = getStepNumber(app.status);
 
             return (
@@ -158,29 +173,19 @@ export default function StudentApplications() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-semibold">{app.jobTitle}</h3>
+                            <h3 className="text-lg font-semibold">{app.job?.title || 'Job Title'}</h3>
                             <Badge variant="outline" className={getStatusColor(app.status)}>
                               {app.status}
                             </Badge>
                           </div>
-                          <p className="text-muted-foreground">{app.companyName}</p>
+                          <p className="text-muted-foreground">{app.job?.company?.name || 'Company'}</p>
                           
-                          {job && (
-                            <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-4 h-4" />
-                                <span>{job.locations.join(', ')}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Banknote className="w-4 h-4" />
-                                <span>₹{(job.packageMin / 100000).toFixed(0)} - {(job.packageMax / 100000).toFixed(0)} LPA</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                <span>Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
-                              </div>
+                          <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Applied: {new Date(app.applied_at).toLocaleDateString()}</span>
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -218,11 +223,6 @@ export default function StudentApplications() {
                         View Details
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
-                      {app.status === 'applied' && (
-                        <Button variant="ghost" size="sm" className="text-destructive flex-1 lg:flex-none">
-                          Withdraw
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardContent>

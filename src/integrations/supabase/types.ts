@@ -14,6 +14,220 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          applied_at: string | null
+          id: string
+          job_id: string
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          id?: string
+          job_id: string
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          id?: string
+          job_id?: string
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificates: {
+        Row: {
+          blockchain_hash: string | null
+          created_at: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          issuer: string
+          student_id: string
+          title: string
+          verified: boolean | null
+        }
+        Insert: {
+          blockchain_hash?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer: string
+          student_id: string
+          title: string
+          verified?: boolean | null
+        }
+        Update: {
+          blockchain_hash?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer?: string
+          student_id?: string
+          title?: string
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          industry: string | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          status: string | null
+          total_hires: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          status?: string | null
+          total_hires?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          status?: string | null
+          total_hires?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          applicants_count: number | null
+          application_deadline: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          drive_date: string | null
+          eligibility_departments: string[] | null
+          eligibility_max_backlogs: number | null
+          eligibility_min_cgpa: number | null
+          eligibility_skills: string[] | null
+          id: string
+          locations: string[] | null
+          package_max: number | null
+          package_min: number | null
+          selected_count: number | null
+          status: string | null
+          title: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          applicants_count?: number | null
+          application_deadline?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          drive_date?: string | null
+          eligibility_departments?: string[] | null
+          eligibility_max_backlogs?: number | null
+          eligibility_min_cgpa?: number | null
+          eligibility_skills?: string[] | null
+          id?: string
+          locations?: string[] | null
+          package_max?: number | null
+          package_min?: number | null
+          selected_count?: number | null
+          status?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          applicants_count?: number | null
+          application_deadline?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          drive_date?: string | null
+          eligibility_departments?: string[] | null
+          eligibility_max_backlogs?: number | null
+          eligibility_min_cgpa?: number | null
+          eligibility_skills?: string[] | null
+          id?: string
+          locations?: string[] | null
+          package_max?: number | null
+          package_min?: number | null
+          selected_count?: number | null
+          status?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -47,6 +261,66 @@ export type Database = {
           name?: string
           roll_number?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          batch: string | null
+          branch: string | null
+          cgpa: number | null
+          created_at: string | null
+          eligible_for_placement: boolean | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          placed_company: string | null
+          placed_package: number | null
+          placement_status: string | null
+          resume_url: string | null
+          roll_number: string | null
+          semester: number | null
+          skills: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          batch?: string | null
+          branch?: string | null
+          cgpa?: number | null
+          created_at?: string | null
+          eligible_for_placement?: boolean | null
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          placed_company?: string | null
+          placed_package?: number | null
+          placement_status?: string | null
+          resume_url?: string | null
+          roll_number?: string | null
+          semester?: number | null
+          skills?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          batch?: string | null
+          branch?: string | null
+          cgpa?: number | null
+          created_at?: string | null
+          eligible_for_placement?: boolean | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          placed_company?: string | null
+          placed_package?: number | null
+          placement_status?: string | null
+          resume_url?: string | null
+          roll_number?: string | null
+          semester?: number | null
+          skills?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
