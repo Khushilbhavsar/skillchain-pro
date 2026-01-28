@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import { Separator } from '@/components/ui/separator';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
+import { VerificationPendingCard } from '@/components/auth/VerificationPendingCard';
 
 const StudentAuth = () => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -23,6 +24,8 @@ const StudentAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [showVerificationPending, setShowVerificationPending] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -138,11 +141,17 @@ const StudentAuth = () => {
       return;
     }
     
-    toast({
-      title: "Account Created!",
-      description: "Your Student account has been created successfully",
-    });
+    // Show verification pending screen
+    setPendingEmail(email);
+    setShowVerificationPending(true);
     setIsLoading(false);
+  };
+
+  const handleBackToSignIn = () => {
+    setShowVerificationPending(false);
+    setActiveTab('signin');
+    setPassword('');
+    setConfirmPassword('');
   };
 
   return (
@@ -156,6 +165,12 @@ const StudentAuth = () => {
           <span className="text-sm">Back to Home</span>
         </Link>
 
+        {showVerificationPending ? (
+          <VerificationPendingCard 
+            email={pendingEmail} 
+            onBackToSignIn={handleBackToSignIn}
+          />
+        ) : (
         <Card className="border-border/50 shadow-xl">
           <CardHeader className="text-center pb-2">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-secondary text-secondary-foreground mx-auto mb-3">
@@ -342,6 +357,7 @@ const StudentAuth = () => {
             </Tabs>
           </CardContent>
         </Card>
+        )}
 
         <ForgotPasswordDialog
           open={forgotPasswordOpen}
