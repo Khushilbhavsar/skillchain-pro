@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -18,9 +19,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Users, Eye, Edit, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { companyService } from '@/services/companyService';
-import { jobService } from '@/services/jobService';
-import { Job } from '@/types';
+import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
+import { companyServiceDB } from '@/services/supabase/companyService';
 import { useToast } from '@/hooks/use-toast';
 
 const statusStyles: Record<string, string> = {
@@ -39,15 +39,17 @@ const typeLabels: Record<string, string> = {
 export default function CompanyJobs() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadJobs = async () => {
       try {
-        const company = await companyService.getCurrentCompany();
-        const companyJobs = await jobService.getJobsByCompany(company.id);
-        setJobs(companyJobs);
+        const companies = await companyServiceDB.getAllCompanies();
+        if (companies.length > 0) {
+          const companyJobs = await jobServiceDB.getJobsByCompany(companies[0].id);
+          setJobs(companyJobs);
+        }
       } catch (error) {
         console.error('Failed to load jobs:', error);
       } finally {
@@ -60,7 +62,7 @@ export default function CompanyJobs() {
 
   const handleCloseJob = async (jobId: string) => {
     try {
-      await jobService.closeJob(jobId);
+      await jobServiceDB.updateJob(jobId, { status: 'closed' });
       setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'closed' } : j));
       toast({
         title: 'Job Closed',
@@ -75,15 +77,26 @@ export default function CompanyJobs() {
     }
   };
 
-  const formatPackage = (min: number, max: number) => {
+  const formatPackage = (min: number | null, max: number | null) => {
     const format = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${n.toLocaleString()}`;
-    return `${format(min)} - ${format(max)}`;
+    return `${format(min || 0)} - ${format(max || 0)}`;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-32 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Card>
+          <CardContent className="py-6">
+            <Skeleton className="h-[300px] w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -134,16 +147,16 @@ export default function CompanyJobs() {
                   <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
                     <TableCell className="font-medium">{job.title}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{typeLabels[job.type]}</Badge>
+                      <Badge variant="outline">{typeLabels[job.type] || job.type}</Badge>
                     </TableCell>
-                    <TableCell>{formatPackage(job.packageMin, job.packageMax)}</TableCell>
+                    <TableCell>{formatPackage(job.package_min, job.package_max)}</TableCell>
                     <TableCell className="max-w-[150px] truncate">
-                      {job.locations.join(', ')}
+                      {job.locations.join(', ') || 'Remote'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-muted-foreground" />
-                        {job.applicantsCount}
+                        {job.applicants_count}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -152,7 +165,7 @@ export default function CompanyJobs() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(job.applicationDeadline).toLocaleDateString()}
+                      {job.application_deadline ? new Date(job.application_deadline).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -162,9 +175,7 @@ export default function CompanyJobs() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/company/applicants?jobId=${job.id}`)}
-                          >
+                          <DropdownMenuItem onClick={() => navigate(`/company/applicants?jobId=${job.id}`)}>
                             <Users className="w-4 h-4 mr-2" />
                             View Applicants
                           </DropdownMenuItem>
@@ -172,15 +183,8 @@ export default function CompanyJobs() {
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit Job
-                          </DropdownMenuItem>
                           {job.status !== 'closed' && (
-                            <DropdownMenuItem
-                              onClick={() => handleCloseJob(job.id)}
-                              className="text-destructive"
-                            >
+                            <DropdownMenuItem onClick={() => handleCloseJob(job.id)} className="text-destructive">
                               <XCircle className="w-4 h-4 mr-2" />
                               Close Job
                             </DropdownMenuItem>

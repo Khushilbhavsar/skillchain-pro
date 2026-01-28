@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { mockStudents, mockJobs, mockApplications } from '@/services/mockData';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { 
   Briefcase, 
@@ -15,38 +15,74 @@ import {
   Search,
   CheckCircle2,
   XCircle,
-  Clock,
-  Filter
+  Clock
 } from 'lucide-react';
-
-// Using first student as the logged-in user
-const currentStudent = mockStudents[0];
-const appliedJobIds = mockApplications
-  .filter(a => a.studentId === currentStudent.id)
-  .map(a => a.jobId);
+import { studentService, StudentData } from '@/services/supabase/studentService';
+import { jobServiceDB, JobData } from '@/services/supabase/jobServiceDB';
+import { applicationService } from '@/services/supabase/applicationService';
 
 export default function StudentJobs() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [appliedJobs, setAppliedJobs] = useState<string[]>(appliedJobIds);
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  const [student, setStudent] = useState<StudentData | null>(null);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState<string | null>(null);
 
-  const openJobs = mockJobs.filter(job => job.status === 'open' || job.status === 'in_progress');
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [allJobs, studentData, applications] = await Promise.all([
+          jobServiceDB.getAllJobs(),
+          studentService.getCurrentStudent(),
+          applicationService.getStudentApplications(),
+        ]);
 
-  const isEligible = (job: typeof mockJobs[0]) => {
+        setJobs(allJobs.filter(j => j.status === 'open' || j.status === 'in_progress'));
+        setStudent(studentData);
+        setAppliedJobIds(new Set(applications.map(a => a.job_id)));
+      } catch (error) {
+        console.error('Error loading jobs:', error);
+        toast.error('Failed to load jobs');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const isEligible = (job: JobData) => {
+    if (!student) return false;
     return (
-      currentStudent.cgpa >= job.eligibilityCriteria.minCgpa &&
-      job.eligibilityCriteria.departments.includes(currentStudent.department) &&
-      currentStudent.eligibleForPlacement
+      (student.cgpa || 0) >= (job.eligibility_min_cgpa || 0) &&
+      (job.eligibility_departments.length === 0 || 
+        job.eligibility_departments.includes(student.branch || '')) &&
+      student.eligible_for_placement
     );
   };
 
-  const filteredJobs = openJobs.filter(job => 
+  const filteredJobs = jobs.filter(job => 
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.companyName.toLowerCase().includes(searchTerm.toLowerCase())
+    job.company?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleApply = (jobId: string) => {
-    setAppliedJobs(prev => [...prev, jobId]);
-    toast.success('Application submitted successfully!');
+  const handleApply = async (jobId: string) => {
+    setApplying(jobId);
+    try {
+      const result = await applicationService.applyToJob(jobId);
+      if (result) {
+        setAppliedJobIds(prev => new Set([...prev, jobId]));
+        toast.success('Application submitted successfully!');
+      } else {
+        toast.error('Failed to apply. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error applying to job:', error);
+      toast.error('Failed to apply. Please try again.');
+    } finally {
+      setApplying(null);
+    }
   };
 
   const getJobTypeColor = (type: string) => {
@@ -57,6 +93,46 @@ export default function StudentJobs() {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const eligibleJobsCount = jobs.filter(j => isEligible(j)).length;
+  const appliedCount = appliedJobIds.size;
+  const upcomingDrivesCount = jobs.filter(j => j.drive_date).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -87,7 +163,7 @@ export default function StudentJobs() {
                 <Briefcase className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{openJobs.length}</p>
+                <p className="text-2xl font-bold">{jobs.length}</p>
                 <p className="text-sm text-muted-foreground">Open Positions</p>
               </div>
             </div>
@@ -100,7 +176,7 @@ export default function StudentJobs() {
                 <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{openJobs.filter(j => isEligible(j)).length}</p>
+                <p className="text-2xl font-bold">{eligibleJobsCount}</p>
                 <p className="text-sm text-muted-foreground">Eligible For</p>
               </div>
             </div>
@@ -113,7 +189,7 @@ export default function StudentJobs() {
                 <Clock className="w-5 h-5 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{appliedJobs.length}</p>
+                <p className="text-2xl font-bold">{appliedCount}</p>
                 <p className="text-sm text-muted-foreground">Applied</p>
               </div>
             </div>
@@ -126,7 +202,7 @@ export default function StudentJobs() {
                 <Calendar className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{openJobs.filter(j => j.driveDate).length}</p>
+                <p className="text-2xl font-bold">{upcomingDrivesCount}</p>
                 <p className="text-sm text-muted-foreground">Upcoming Drives</p>
               </div>
             </div>
@@ -138,7 +214,8 @@ export default function StudentJobs() {
       <div className="grid gap-4 md:grid-cols-2">
         {filteredJobs.map((job) => {
           const eligible = isEligible(job);
-          const hasApplied = appliedJobs.includes(job.id);
+          const hasApplied = appliedJobIds.has(job.id);
+          const isApplying = applying === job.id;
 
           return (
             <Card key={job.id} className={!eligible ? 'opacity-60' : ''}>
@@ -150,7 +227,7 @@ export default function StudentJobs() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{job.title}</CardTitle>
-                      <CardDescription>{job.companyName}</CardDescription>
+                      <CardDescription>{job.company?.name || 'Company'}</CardDescription>
                     </div>
                   </div>
                   <Badge className={getJobTypeColor(job.type)}>
@@ -159,28 +236,30 @@ export default function StudentJobs() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{job.description || 'No description available'}</p>
 
                 <div className="flex flex-wrap gap-3 text-sm">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <MapPin className="w-4 h-4" />
-                    <span>{job.locations.slice(0, 2).join(', ')}</span>
+                    <span>{job.locations.slice(0, 2).join(', ') || 'Remote'}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Banknote className="w-4 h-4" />
-                    <span>₹{(job.packageMin / 100000).toFixed(0)} - {(job.packageMax / 100000).toFixed(0)} LPA</span>
-                  </div>
+                  {job.package_min && job.package_max && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Banknote className="w-4 h-4" />
+                      <span>₹{(job.package_min / 100000).toFixed(0)} - {(job.package_max / 100000).toFixed(0)} LPA</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Eligibility Criteria */}
                 <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">ELIGIBILITY CRITERIA</p>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className={currentStudent.cgpa >= job.eligibilityCriteria.minCgpa ? 'border-success/30 text-success' : 'border-destructive/30 text-destructive'}>
+                    <Badge variant="outline" className={(student?.cgpa || 0) >= (job.eligibility_min_cgpa || 0) ? 'border-success/30 text-success' : 'border-destructive/30 text-destructive'}>
                       <GraduationCap className="w-3 h-3 mr-1" />
-                      Min CGPA: {job.eligibilityCriteria.minCgpa}
+                      Min CGPA: {job.eligibility_min_cgpa || 0}
                     </Badge>
-                    {job.eligibilityCriteria.skills.slice(0, 2).map((skill) => (
+                    {job.eligibility_skills.slice(0, 2).map((skill) => (
                       <Badge key={skill} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>
@@ -190,11 +269,13 @@ export default function StudentJobs() {
 
                 {/* Deadline */}
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}</span>
-                  </div>
-                  <span className="text-muted-foreground">{job.applicantsCount} applicants</span>
+                  {job.application_deadline && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  <span className="text-muted-foreground">{job.applicants_count} applicants</span>
                 </div>
 
                 {/* Actions */}
@@ -205,8 +286,12 @@ export default function StudentJobs() {
                       Applied
                     </Button>
                   ) : eligible ? (
-                    <Button className="flex-1" onClick={() => handleApply(job.id)}>
-                      Apply Now
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => handleApply(job.id)}
+                      disabled={isApplying}
+                    >
+                      {isApplying ? 'Applying...' : 'Apply Now'}
                     </Button>
                   ) : (
                     <Button disabled variant="secondary" className="flex-1">

@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { mockStudents, mockApplications, mockCertificates, mockJobs } from '@/services/mockData';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   GraduationCap, 
   Award, 
@@ -17,18 +18,43 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { studentService, StudentData } from '@/services/supabase/studentService';
+import { applicationService, ApplicationData } from '@/services/supabase/applicationService';
+import { certificateServiceDB } from '@/services/supabase/certificateService';
+import { jobServiceDB } from '@/services/supabase/jobServiceDB';
 
 export default function StudentDashboard() {
   const { profile } = useAuth();
-  
-  // Using first student as fallback for demo data
-  const currentStudent = mockStudents[0];
-  const studentApplications = mockApplications.filter(a => a.studentId === currentStudent.id);
-  const studentCertificates = mockCertificates.filter(c => c.studentId === currentStudent.id);
-  const eligibleJobs = mockJobs.filter(j => 
-    j.status === 'open' && 
-    currentStudent.cgpa >= j.eligibilityCriteria.minCgpa
-  );
+  const [student, setStudent] = useState<StudentData | null>(null);
+  const [applications, setApplications] = useState<ApplicationData[]>([]);
+  const [certificateCount, setCertificateCount] = useState(0);
+  const [openJobsCount, setOpenJobsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [studentData, appsData, certCount, jobsCount] = await Promise.all([
+          studentService.getCurrentStudent(),
+          applicationService.getStudentApplications(),
+          certificateServiceDB.getStudentCertificateCount(),
+          jobServiceDB.getOpenJobsCount(),
+        ]);
+        
+        setStudent(studentData);
+        setApplications(appsData);
+        setCertificateCount(certCount);
+        setOpenJobsCount(jobsCount);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'selected': return <CheckCircle2 className="w-4 h-4 text-success" />;
@@ -47,14 +73,42 @@ export default function StudentDashboard() {
     }
   };
 
-  const placementStatusConfig = {
+  const placementStatusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
     placed: { label: 'Placed', color: 'bg-success text-success-foreground', icon: CheckCircle2 },
     unplaced: { label: 'Seeking Opportunities', color: 'bg-warning text-warning-foreground', icon: Clock },
     in_process: { label: 'In Process', color: 'bg-info text-info-foreground', icon: TrendingUp },
     opted_out: { label: 'Opted Out', color: 'bg-muted text-muted-foreground', icon: XCircle },
   };
 
-  const statusConfig = placementStatusConfig[currentStudent.placementStatus];
+  const statusConfig = placementStatusConfig[student?.placement_status || 'unplaced'];
+  const StatusIcon = statusConfig.icon;
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-1" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -65,7 +119,7 @@ export default function StudentDashboard() {
           <p className="text-muted-foreground">Here's your placement journey overview</p>
         </div>
         <Badge className={`${statusConfig.color} px-4 py-2 text-sm`}>
-          <statusConfig.icon className="w-4 h-4 mr-2" />
+          <StatusIcon className="w-4 h-4 mr-2" />
           {statusConfig.label}
         </Badge>
       </div>
@@ -78,8 +132,8 @@ export default function StudentDashboard() {
             <GraduationCap className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentStudent.cgpa.toFixed(1)}</div>
-            <p className="text-xs text-muted-foreground">{profile?.department || currentStudent.department}</p>
+            <div className="text-2xl font-bold">{student?.cgpa?.toFixed(1) || '0.0'}</div>
+            <p className="text-xs text-muted-foreground">{student?.branch || profile?.department || 'Not set'}</p>
           </CardContent>
         </Card>
 
@@ -89,7 +143,7 @@ export default function StudentDashboard() {
             <Award className="w-4 h-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{studentCertificates.length}</div>
+            <div className="text-2xl font-bold">{certificateCount}</div>
             <p className="text-xs text-muted-foreground">Blockchain verified</p>
           </CardContent>
         </Card>
@@ -100,19 +154,19 @@ export default function StudentDashboard() {
             <FileText className="w-4 h-4 text-info" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{studentApplications.length}</div>
+            <div className="text-2xl font-bold">{applications.length}</div>
             <p className="text-xs text-muted-foreground">Active applications</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Eligible Jobs</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Open Jobs</CardTitle>
             <Briefcase className="w-4 h-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{eligibleJobs.length}</div>
-            <p className="text-xs text-muted-foreground">Open positions</p>
+            <div className="text-2xl font-bold">{openJobsCount}</div>
+            <p className="text-xs text-muted-foreground">Available positions</p>
           </CardContent>
         </Card>
       </div>
@@ -126,35 +180,21 @@ export default function StudentDashboard() {
               <Star className="w-5 h-5 text-warning" />
               Skill Development
             </CardTitle>
-            <CardDescription>Your verified and in-progress skills</CardDescription>
+            <CardDescription>Your skills and proficiency</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {currentStudent.skills.map((skill) => {
-              const levelPercent = {
-                beginner: 25,
-                intermediate: 50,
-                advanced: 75,
-                expert: 100,
-              }[skill.level];
-
-              return (
-                <div key={skill.id} className="space-y-2">
+            {student?.skills && student.skills.length > 0 ? (
+              student.skills.slice(0, 5).map((skill, index) => (
+                <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{skill.name}</span>
-                      {skill.verified && (
-                        <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="text-sm text-muted-foreground capitalize">{skill.level}</span>
+                    <span className="font-medium">{skill}</span>
                   </div>
-                  <Progress value={levelPercent} className="h-2" />
+                  <Progress value={70 + Math.random() * 30} className="h-2" />
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No skills added yet. Update your profile to add skills.</p>
+            )}
             <Button variant="outline" className="w-full mt-4" asChild>
               <Link to="/student/certificates">
                 View All Certificates
@@ -174,15 +214,15 @@ export default function StudentDashboard() {
             <CardDescription>Track your job application status</CardDescription>
           </CardHeader>
           <CardContent>
-            {studentApplications.length > 0 ? (
+            {applications.length > 0 ? (
               <div className="space-y-4">
-                {studentApplications.slice(0, 4).map((app) => (
+                {applications.slice(0, 4).map((app) => (
                   <div key={app.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(app.status)}
                       <div>
-                        <p className="font-medium">{app.jobTitle}</p>
-                        <p className="text-sm text-muted-foreground">{app.companyName}</p>
+                        <p className="font-medium">{app.job?.title || 'Job'}</p>
+                        <p className="text-sm text-muted-foreground">{app.job?.company?.name || 'Company'}</p>
                       </div>
                     </div>
                     <Badge variant="outline" className={getStatusColor(app.status)}>
@@ -211,7 +251,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Placement Info (if placed) */}
-      {currentStudent.placementStatus === 'placed' && currentStudent.placedCompany && (
+      {student?.placement_status === 'placed' && student.placed_company && (
         <Card className="border-success/20 bg-success/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-success">
@@ -223,15 +263,17 @@ export default function StudentDashboard() {
             <div className="flex flex-wrap gap-6">
               <div>
                 <p className="text-sm text-muted-foreground">Company</p>
-                <p className="text-xl font-bold">{currentStudent.placedCompany}</p>
+                <p className="text-xl font-bold">{student.placed_company}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Package</p>
-                <p className="text-xl font-bold">₹{(currentStudent.placedPackage! / 100000).toFixed(1)} LPA</p>
-              </div>
+              {student.placed_package && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Package</p>
+                  <p className="text-xl font-bold">₹{(student.placed_package / 100000).toFixed(1)} LPA</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-muted-foreground">Department</p>
-                <p className="text-xl font-bold">{currentStudent.department}</p>
+                <p className="text-xl font-bold">{student.branch || 'N/A'}</p>
               </div>
             </div>
           </CardContent>
