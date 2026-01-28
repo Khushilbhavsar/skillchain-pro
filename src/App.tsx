@@ -9,9 +9,10 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
 import { CompanyLayout } from "@/components/layout/CompanyLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-
 // Auth Pages
 import AdminAuth from "./pages/auth/AdminAuth";
 import StudentAuth from "./pages/auth/StudentAuth";
@@ -44,78 +45,86 @@ import Applicants from "./pages/company/Applicants";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/auth/admin" element={<AdminAuth />} />
-              <Route path="/auth/student" element={<StudentAuth />} />
-              <Route path="/auth/company" element={<CompanyAuth />} />
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<RouteErrorBoundary><Index /></RouteErrorBoundary>} />
+                <Route path="/auth/admin" element={<RouteErrorBoundary><AdminAuth /></RouteErrorBoundary>} />
+                <Route path="/auth/student" element={<RouteErrorBoundary><StudentAuth /></RouteErrorBoundary>} />
+                <Route path="/auth/company" element={<RouteErrorBoundary><CompanyAuth /></RouteErrorBoundary>} />
 
-              {/* Protected Admin Routes */}
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute allowedRoles={['tpo']}>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<AdminDashboard />} />
-                <Route path="students" element={<StudentsPage />} />
-                <Route path="companies" element={<CompaniesPage />} />
-                <Route path="jobs" element={<JobsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-                <Route path="advanced-analytics" element={<AdvancedAnalyticsPage />} />
-                <Route path="interviews" element={<InterviewSchedulingPage />} />
-                <Route path="verification" element={<VerificationPage />} />
-              </Route>
+                {/* Protected Admin Routes */}
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute allowedRoles={['tpo']}>
+                      <RouteErrorBoundary>
+                        <DashboardLayout />
+                      </RouteErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<RouteErrorBoundary><AdminDashboard /></RouteErrorBoundary>} />
+                  <Route path="students" element={<RouteErrorBoundary><StudentsPage /></RouteErrorBoundary>} />
+                  <Route path="companies" element={<RouteErrorBoundary><CompaniesPage /></RouteErrorBoundary>} />
+                  <Route path="jobs" element={<RouteErrorBoundary><JobsPage /></RouteErrorBoundary>} />
+                  <Route path="analytics" element={<RouteErrorBoundary><AnalyticsPage /></RouteErrorBoundary>} />
+                  <Route path="advanced-analytics" element={<RouteErrorBoundary><AdvancedAnalyticsPage /></RouteErrorBoundary>} />
+                  <Route path="interviews" element={<RouteErrorBoundary><InterviewSchedulingPage /></RouteErrorBoundary>} />
+                  <Route path="verification" element={<RouteErrorBoundary><VerificationPage /></RouteErrorBoundary>} />
+                </Route>
 
-              {/* Protected Student Routes */}
-              <Route 
-                path="/student" 
-                element={
-                  <ProtectedRoute allowedRoles={['student']}>
-                    <StudentLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<StudentDashboard />} />
-                <Route path="profile" element={<StudentProfile />} />
-                <Route path="certificates" element={<StudentCertificates />} />
-                <Route path="applications" element={<StudentApplications />} />
-                <Route path="jobs" element={<StudentJobs />} />
-                <Route path="resume" element={<ResumeBuilder />} />
-              </Route>
+                {/* Protected Student Routes */}
+                <Route 
+                  path="/student" 
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <RouteErrorBoundary>
+                        <StudentLayout />
+                      </RouteErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<RouteErrorBoundary><StudentDashboard /></RouteErrorBoundary>} />
+                  <Route path="profile" element={<RouteErrorBoundary><StudentProfile /></RouteErrorBoundary>} />
+                  <Route path="certificates" element={<RouteErrorBoundary><StudentCertificates /></RouteErrorBoundary>} />
+                  <Route path="applications" element={<RouteErrorBoundary><StudentApplications /></RouteErrorBoundary>} />
+                  <Route path="jobs" element={<RouteErrorBoundary><StudentJobs /></RouteErrorBoundary>} />
+                  <Route path="resume" element={<RouteErrorBoundary><ResumeBuilder /></RouteErrorBoundary>} />
+                </Route>
 
-              {/* Protected Company Routes */}
-              <Route 
-                path="/company" 
-                element={
-                  <ProtectedRoute allowedRoles={['company']}>
-                    <CompanyLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<CompanyDashboard />} />
-                <Route path="jobs" element={<CompanyJobs />} />
-                <Route path="post-job" element={<PostJob />} />
-                <Route path="applicants" element={<Applicants />} />
-              </Route>
+                {/* Protected Company Routes */}
+                <Route 
+                  path="/company" 
+                  element={
+                    <ProtectedRoute allowedRoles={['company']}>
+                      <RouteErrorBoundary>
+                        <CompanyLayout />
+                      </RouteErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<RouteErrorBoundary><CompanyDashboard /></RouteErrorBoundary>} />
+                  <Route path="jobs" element={<RouteErrorBoundary><CompanyJobs /></RouteErrorBoundary>} />
+                  <Route path="post-job" element={<RouteErrorBoundary><PostJob /></RouteErrorBoundary>} />
+                  <Route path="applicants" element={<RouteErrorBoundary><Applicants /></RouteErrorBoundary>} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
