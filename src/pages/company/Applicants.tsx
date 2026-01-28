@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -34,11 +35,11 @@ import { Job, Application, Student } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const statusStyles: Record<string, string> = {
-  applied: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  shortlisted: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  interviewed: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-  selected: 'bg-green-500/10 text-green-600 border-green-500/20',
-  rejected: 'bg-red-500/10 text-red-600 border-red-500/20',
+  applied: 'bg-info/10 text-info border-info/20',
+  shortlisted: 'bg-warning/10 text-warning border-warning/20',
+  interviewed: 'bg-accent/10 text-accent-foreground border-accent/20',
+  selected: 'bg-success/10 text-success border-success/20',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 type ApplicantWithStudent = Application & { student: Student | undefined };
@@ -120,8 +121,48 @@ export default function Applicants() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <Skeleton className="h-9 w-40 mb-2" />
+          <Skeleton className="h-5 w-56" />
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[200px]">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40 mb-2" />
+            <Skeleton className="h-4 w-56" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
