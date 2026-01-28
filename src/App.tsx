@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import AdminAuth from "./pages/auth/AdminAuth";
 import StudentAuth from "./pages/auth/StudentAuth";
 import CompanyAuth from "./pages/auth/CompanyAuth";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/auth/admin" element={<RouteErrorBoundary><AdminAuth /></RouteErrorBoundary>} />
                 <Route path="/auth/student" element={<RouteErrorBoundary><StudentAuth /></RouteErrorBoundary>} />
                 <Route path="/auth/company" element={<RouteErrorBoundary><CompanyAuth /></RouteErrorBoundary>} />
+                <Route path="/reset-password" element={<RouteErrorBoundary><ResetPassword /></RouteErrorBoundary>} />
 
                 {/* Protected Admin Routes */}
                 <Route 

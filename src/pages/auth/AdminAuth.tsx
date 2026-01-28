@@ -10,6 +10,7 @@ import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import { Separator } from '@/components/ui/separator';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const AdminAuth = () => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -19,6 +20,7 @@ const AdminAuth = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const { signIn, signUp, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -218,6 +220,16 @@ const AdminAuth = () => {
                         </Button>
                       </div>
                     </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 h-auto text-sm"
+                        onClick={() => setForgotPasswordOpen(true)}
+                      >
+                        Forgot password?
+                      </Button>
+                    </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
@@ -306,6 +318,12 @@ const AdminAuth = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        <ForgotPasswordDialog
+          open={forgotPasswordOpen}
+          onOpenChange={setForgotPasswordOpen}
+          defaultEmail={email}
+        />
       </div>
     </div>
   );
