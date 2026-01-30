@@ -26,9 +26,16 @@ export default function CompanyDashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get all companies (in a real app, you'd filter by the logged-in company user)
-        const companies = await companyServiceDB.getAllCompanies();
-        const currentCompany = companies.length > 0 ? companies[0] : null;
+        // Get the logged-in user's company based on their profile company_name
+        const companyName = profile?.company_name;
+        let currentCompany: CompanyData | null = null;
+        
+        if (companyName) {
+          // Find company by name matching the logged-in user's company_name
+          const companies = await companyServiceDB.getAllCompanies();
+          currentCompany = companies.find(c => c.name === companyName) || null;
+        }
+        
         setCompany(currentCompany);
 
         if (currentCompany) {
@@ -55,7 +62,7 @@ export default function CompanyDashboard() {
     };
 
     loadData();
-  }, []);
+  }, [profile?.company_name]);
 
   const formatPackage = (amount: number | null) => {
     if (!amount) return '₹0';

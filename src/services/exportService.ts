@@ -16,21 +16,22 @@ export async function exportToPDF(
   title: string,
   filename: string
 ): Promise<void> {
-  // Create HTML table
+  // Create HTML table with escaped values to prevent XSS
+  const escapedTitle = escapeHtml(title);
   const tableHtml = `
     <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h1 style="color: #1e40af; margin-bottom: 20px; font-size: 24px;">${title}</h1>
+      <h1 style="color: #1e40af; margin-bottom: 20px; font-size: 24px;">${escapedTitle}</h1>
       <p style="color: #666; margin-bottom: 20px; font-size: 12px;">Generated on ${new Date().toLocaleString()}</p>
       <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
         <thead>
           <tr style="background-color: #1e40af; color: white;">
-            ${columns.map((col) => `<th style="padding: 12px 8px; text-align: left; border: 1px solid #ddd;">${col.header}</th>`).join('')}
+            ${columns.map((col) => `<th style="padding: 12px 8px; text-align: left; border: 1px solid #ddd;">${escapeHtml(col.header)}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
           ${data.map((row, idx) => `
             <tr style="background-color: ${idx % 2 === 0 ? '#f9fafb' : 'white'};">
-              ${columns.map((col) => `<td style="padding: 10px 8px; border: 1px solid #ddd;">${formatValue(row[col.key])}</td>`).join('')}
+              ${columns.map((col) => `<td style="padding: 10px 8px; border: 1px solid #ddd;">${formatValueForHtml(row[col.key])}</td>`).join('')}
             </tr>
           `).join('')}
         </tbody>
@@ -88,12 +89,24 @@ export function exportToExcel(
   document.body.removeChild(link);
 }
 
+// Helper to escape HTML to prevent XSS attacks
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Helper to format values for export
 function formatValue(value: any): string {
   if (value === null || value === undefined) return '';
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+// Helper to format and escape values for HTML export (prevents XSS)
+function formatValueForHtml(value: any): string {
+  return escapeHtml(formatValue(value));
 }
 
 // Export analytics chart as image
