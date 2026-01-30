@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { StatCard } from '@/components/admin/StatCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, UserCheck, Clock, TrendingUp, IndianRupee, Award, Building2, Briefcase } from 'lucide-react';
+import { Users, UserCheck, Clock, Building2, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentService } from '@/services/supabase/studentService';
 import { companyServiceDB } from '@/services/supabase/companyService';
 import { jobServiceDB } from '@/services/supabase/jobServiceDB';
+import { analyticsService, MonthlyPlacement, SkillDemand } from '@/services/analyticsService';
+import { toast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
@@ -20,25 +22,33 @@ export default function AdminDashboard() {
     placementPercentage: 0,
   });
   const [companiesCount, setCompaniesCount] = useState(0);
-  const [jobsCount, setJobsCount] = useState(0);
   const [openJobsCount, setOpenJobsCount] = useState(0);
+  const [monthlyData, setMonthlyData] = useState<MonthlyPlacement[]>([]);
+  const [skillDemand, setSkillDemand] = useState<SkillDemand[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [placementStats, companies, jobs, openJobs] = await Promise.all([
+        const [placementStats, companies, openJobs, monthlyPlacements, skills] = await Promise.all([
           studentService.getPlacementStats(),
           companyServiceDB.getCompanyCount(),
-          jobServiceDB.getJobCount(),
           jobServiceDB.getOpenJobsCount(),
+          analyticsService.getMonthlyPlacements(),
+          analyticsService.getSkillDemand(),
         ]);
         
         setStats(placementStats);
         setCompaniesCount(companies);
-        setJobsCount(jobs);
         setOpenJobsCount(openJobs);
+        setMonthlyData(monthlyPlacements);
+        setSkillDemand(skills);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load dashboard data. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -46,26 +56,6 @@ export default function AdminDashboard() {
 
     loadData();
   }, []);
-
-  // Mock monthly data for charts - this would come from analytics in a real implementation
-  const monthlyData = [
-    { month: 'Aug', placements: 0, offers: 0 },
-    { month: 'Sep', placements: 0, offers: 0 },
-    { month: 'Oct', placements: 0, offers: 0 },
-    { month: 'Nov', placements: stats.placedStudents > 0 ? Math.floor(stats.placedStudents * 0.3) : 0, offers: 0 },
-    { month: 'Dec', placements: stats.placedStudents > 0 ? Math.floor(stats.placedStudents * 0.4) : 0, offers: 0 },
-    { month: 'Jan', placements: stats.placedStudents > 0 ? Math.floor(stats.placedStudents * 0.3) : 0, offers: 0 },
-  ];
-
-  // Mock skill demand data
-  const skillDemand = [
-    { skill: 'Python', demand: 85, trend: 'up' },
-    { skill: 'React', demand: 78, trend: 'up' },
-    { skill: 'Java', demand: 72, trend: 'stable' },
-    { skill: 'AWS', demand: 68, trend: 'up' },
-    { skill: 'Machine Learning', demand: 65, trend: 'up' },
-    { skill: 'Node.js', demand: 58, trend: 'stable' },
-  ];
 
   if (loading) {
     return (
