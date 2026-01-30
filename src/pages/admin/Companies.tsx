@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MemoizedCompanyCard } from '@/components/admin/MemoizedCompanyCard';
 import { Button } from '@/components/ui/button';
 import { Plus, Building2 } from 'lucide-react';
@@ -6,7 +6,9 @@ import { SearchAndFilter, FilterState } from '@/components/search/SearchAndFilte
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/EmptyState';
+import { DataPagination, PaginationState } from '@/components/ui/data-pagination';
 import { companyServiceDB, CompanyData } from '@/services/supabase/companyService';
+import { toast } from '@/hooks/use-toast';
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -22,6 +24,11 @@ export default function CompaniesPage() {
   });
   const [companies, setCompanies] = useState<CompanyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    pageSize: 9,
+    totalItems: 0,
+  });
 
   useEffect(() => {
     const loadCompanies = async () => {
@@ -30,6 +37,11 @@ export default function CompaniesPage() {
         setCompanies(data);
       } catch (error) {
         console.error('Error loading companies:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load companies. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -39,19 +51,33 @@ export default function CompaniesPage() {
   }, []);
 
   // Filter companies based on search and filters
-  const filteredCompanies = companies.filter(company => {
-    const matchesQuery = !filters.query || 
-      company.name.toLowerCase().includes(filters.query.toLowerCase()) ||
-      (company.industry?.toLowerCase().includes(filters.query.toLowerCase()));
-    
-    const matchesStatus = filters.status === 'all' || 
-      company.status === filters.status;
+  const filteredCompanies = useMemo(() => {
+    return companies.filter(company => {
+      const matchesQuery = !filters.query || 
+        company.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+        (company.industry?.toLowerCase().includes(filters.query.toLowerCase()));
+      
+      const matchesStatus = filters.status === 'all' || 
+        company.status === filters.status;
 
-    return matchesQuery && matchesStatus;
-  });
+      return matchesQuery && matchesStatus;
+    });
+  }, [companies, filters]);
+
+  // Update pagination total when filtered results change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, totalItems: filteredCompanies.length, page: 1 }));
+  }, [filteredCompanies.length]);
+
+  // Paginate the filtered results
+  const paginatedCompanies = useMemo(() => {
+    const start = (pagination.page - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    return filteredCompanies.slice(start, end);
+  }, [filteredCompanies, pagination.page, pagination.pageSize]);
 
   // Convert to format expected by CompanyCard
-  const displayCompanies = filteredCompanies.map(c => ({
+  const displayCompanies = paginatedCompanies.map(c => ({
     id: c.id,
     name: c.name,
     logo: c.logo_url || undefined,
@@ -111,10 +137,18 @@ export default function CompaniesPage() {
       />
 
       {displayCompanies.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
-          {displayCompanies.map((company) => (
-            <MemoizedCompanyCard key={company.id} company={company} />
-          ))}
+        <div className="space-y-4 animate-fade-in">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {displayCompanies.map((company) => (
+              <MemoizedCompanyCard key={company.id} company={company} />
+            ))}
+          </div>
+          <DataPagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(pageSize) => setPagination(prev => ({ ...prev, pageSize, page: 1 }))}
+            pageSizeOptions={[9, 18, 36]}
+          />
         </div>
       ) : companies.length === 0 ? (
         <EmptyState

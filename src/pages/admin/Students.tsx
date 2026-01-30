@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { StudentTable } from '@/components/admin/StudentTable';
 import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
@@ -6,7 +6,9 @@ import { SearchAndFilter, FilterState } from '@/components/search/SearchAndFilte
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/EmptyState';
+import { DataPagination, PaginationState } from '@/components/ui/data-pagination';
 import { studentService, StudentData } from '@/services/supabase/studentService';
+import { toast } from '@/hooks/use-toast';
 
 const departmentOptions = [
   { value: 'Computer Science', label: 'Computer Science' },
@@ -30,6 +32,11 @@ export default function StudentsPage() {
   });
   const [students, setStudents] = useState<StudentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    pageSize: 10,
+    totalItems: 0,
+  });
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -38,6 +45,11 @@ export default function StudentsPage() {
         setStudents(data);
       } catch (error) {
         console.error('Error loading students:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load students. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -47,23 +59,37 @@ export default function StudentsPage() {
   }, []);
 
   // Filter students based on search and filters
-  const filteredStudents = students.filter(student => {
-    const matchesQuery = !filters.query || 
-      student.full_name.toLowerCase().includes(filters.query.toLowerCase()) ||
-      student.email.toLowerCase().includes(filters.query.toLowerCase()) ||
-      (student.roll_number?.toLowerCase().includes(filters.query.toLowerCase()));
-    
-    const matchesDepartment = filters.department === 'all' || 
-      student.branch === filters.department;
-    
-    const matchesStatus = filters.status === 'all' || 
-      student.placement_status === filters.status;
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+      const matchesQuery = !filters.query || 
+        student.full_name.toLowerCase().includes(filters.query.toLowerCase()) ||
+        student.email.toLowerCase().includes(filters.query.toLowerCase()) ||
+        (student.roll_number?.toLowerCase().includes(filters.query.toLowerCase()));
+      
+      const matchesDepartment = filters.department === 'all' || 
+        student.branch === filters.department;
+      
+      const matchesStatus = filters.status === 'all' || 
+        student.placement_status === filters.status;
 
-    return matchesQuery && matchesDepartment && matchesStatus;
-  });
+      return matchesQuery && matchesDepartment && matchesStatus;
+    });
+  }, [students, filters]);
+
+  // Update pagination total when filtered results change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, totalItems: filteredStudents.length, page: 1 }));
+  }, [filteredStudents.length]);
+
+  // Paginate the filtered results
+  const paginatedStudents = useMemo(() => {
+    const start = (pagination.page - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    return filteredStudents.slice(start, end);
+  }, [filteredStudents, pagination.page, pagination.pageSize]);
 
   // Convert to format expected by StudentTable
-  const tableStudents = filteredStudents.map(s => ({
+  const tableStudents = paginatedStudents.map(s => ({
     id: s.id,
     name: s.full_name,
     email: s.email,
@@ -124,8 +150,13 @@ export default function StudentsPage() {
       />
 
       {tableStudents.length > 0 ? (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in space-y-4">
           <StudentTable students={tableStudents} />
+          <DataPagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(pageSize) => setPagination(prev => ({ ...prev, pageSize, page: 1 }))}
+          />
         </div>
       ) : students.length === 0 ? (
         <EmptyState
