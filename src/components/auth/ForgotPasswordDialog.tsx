@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,7 @@ interface ForgotPasswordDialogProps {
   defaultEmail?: string;
 }
 
-export const ForgotPasswordDialog = forwardRef<HTMLDivElement, ForgotPasswordDialogProps>(
-  function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = '' }, ref) {
+export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = '' }: ForgotPasswordDialogProps) {
   const [email, setEmail] = useState(defaultEmail);
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -140,4 +139,4 @@ export const ForgotPasswordDialog = forwardRef<HTMLDivElement, ForgotPasswordDia
       </DialogContent>
     </Dialog>
   );
-});
+}
